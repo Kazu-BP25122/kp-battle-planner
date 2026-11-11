@@ -1,0 +1,25 @@
+---
+import { getCollection } from "astro:content";
+import App from "../components/App";
+import "../styles/global.css";
+
+// キャラ定義・枠はビルド時に Zod で検証済み（src/content.config.ts）
+// TODO(spec): §12 500 体規模では一覧インデックス + 詳細の遅延読み込みにする（初期リリースの範囲外）
+const characters = (await getCollection("characters")).map((e) => e.data);
+const buffSlots = (await getCollection("buffSlots")).map((e) => e.data);
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="神姫PROJECT のバトルの行動チャートを作成・検証するツール" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>神姫PROJECT チャート作成ツール</title>
+  </head>
+  <body>
+    <App client:only="react" characters={characters} buffSlots={buffSlots} />
+    <noscript>このツールは JavaScript が必要です。</noscript>
+  </body>
+</html>

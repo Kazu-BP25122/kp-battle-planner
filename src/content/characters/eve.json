@@ -1,0 +1,51 @@
+{
+  "id": "eve",
+  "name": "イヴ",
+  "kind": "princess",
+  "element": "thunder",
+  "burst": {
+    "description": "未入力（§10.3 に記載なし）",
+    "effects": [{ "type": "damage", "target": "enemy", "category": "burst" }]
+  },
+  "abilities": [
+    {
+      "id": "eve_ability3",
+      "name": "アビリティ3",
+      "color": "yellow",
+      "ct": 5,
+      "effects": [
+        { "type": "gaugeUp", "target": "allAllies", "amount": 20 },
+        { "type": "addBuff", "target": "allAllies", "buff": "被ダメージ-1000", "slot": "damageCut", "amount": 1000, "duration": { "turns": 1 } },
+        {
+          "type": "if",
+          "cond": { "useCount": { "ability": "self", "scope": "battle", "parity": "odd" } },
+          "then": [{ "type": "addBuff", "target": "allAllies", "buff": "バーストダメージUP", "slot": "burstDmgUp", "amount": null, "duration": { "turns": 1 } }],
+          "else": [{ "type": "addStatus", "target": "allAllies", "status": "サステイン", "duration": { "count": 1 } }]
+        }
+      ]
+    }
+  ],
+  "assists": [
+    {
+      "id": "eve_assist1",
+      "name": "アシスト1",
+      "trigger": { "event": "abilityUsed", "filter": { "color": "red", "element": "thunder" } },
+      "cond": { "count": { "event": "abilityUsed", "filter": { "color": "red", "element": "thunder" }, "scope": "turn", "multipleOf": 5 } },
+      "limit": { "perTurn": 10 },
+      "effects": [{ "type": "changeCT", "target": "self", "abilities": "all", "amount": -1 }]
+    },
+    {
+      "id": "eve_assist2",
+      "name": "アシスト2",
+      "trigger": { "event": "abilityUsed", "filter": { "color": "red", "element": "thunder" } },
+      "cond": { "count": { "event": "abilityUsed", "filter": { "color": "red", "element": "thunder" }, "scope": "turn", "gte": 15 } },
+      "effects": [
+        { "type": "damage", "target": "enemy", "category": "ability" },
+        { "type": "heal", "target": { "alliesWhere": { "element": "thunder" } } },
+        { "type": "removeDebuff", "target": { "alliesWhere": { "element": "thunder" } }, "count": 1 }
+      ]
+    }
+  ],
+  "source": "AGENTS.md §10.3（数値・枠 ID は仮置き）",
+  "notes": "アビ1・2、バーストは §10.3 に定義が無いため未入力。アシスト2のトリガーと発動回数は仮置き（§11）。実データは wiki・実機で確認して埋めること"
+}
