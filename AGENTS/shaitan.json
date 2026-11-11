@@ -123,6 +123,7 @@
   "assists": [
     {
       "id": "shaitan_assist1_limiter",
+      "name": "バハルタフリール",
       "origin": {
         "kind": "assist",
         "index": 1
@@ -169,6 +170,7 @@
     },
     {
       "id": "shaitan_assist1_limiterReset",
+      "name": "バハルタフリール",
       "origin": {
         "kind": "assist",
         "index": 1
@@ -187,6 +189,7 @@
     },
     {
       "id": "shaitan_assist1_redUse",
+      "name": "バハルタフリール",
       "origin": {
         "kind": "assist",
         "index": 1
@@ -210,6 +213,7 @@
     },
     {
       "id": "shaitan_assist2",
+      "name": "アダンイスタアッダ",
       "origin": {
         "kind": "assist",
         "index": 2

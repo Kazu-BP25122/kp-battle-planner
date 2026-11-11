@@ -6,7 +6,8 @@ import { chartToJson, parseChartJson } from "../chart/storage";
 import { createMonteCarlo, UNUSABLE_LABEL, type MonteCarloResult, type Warning } from "../engine";
 import type { Commit } from "./App";
 import type { ChartModel } from "./model";
-import { charName, failureLabel, opLabel } from "./labels";
+import { charName, eventLogLines, failureLabel, opLabel, PHASE_LABEL } from "./labels";
+import type { BattleEvent } from "../engine";
 
 interface Props {
   catalog: Catalog;
@@ -43,6 +44,18 @@ export function ChartView({ catalog, chart, model, cursor, jumpTo, commit, notif
   const warnings = model.full.battle.state.warnings;
   const rows = useMemo(() => model.path.map((node, i) => ({ node, op: node.op, step: steps[i]!, index: i })), [model.path, steps]);
   const turns = splitTurns(rows);
+  // 開いている行（表示設定なので履歴には積まない。§14.3）。"start" は戦闘開始の行
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
+  const toggle = (key: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const log = model.full.battle.state.log;
+  // 戦闘開始〜1 ターン目のターン開始処理（操作の前）に起きたこと
+  const startEvents = useMemo(() => log.filter((e) => e.opIndex < 0), [log]);
 
   return (
     <div className="chartview">
@@ -59,31 +72,40 @@ export function ChartView({ catalog, chart, model, cursor, jumpTo, commit, notif
             </tr>
           </thead>
           <tbody>
-            <tr className={cursor === null ? "current" : ""} onClick={() => jumpTo(null)}>
+            <tr className={`${cursor === null ? "current" : ""}${open.has("start") ? " open" : ""}`} onClick={() => toggle("start")} aria-expanded={open.has("start")} title="クリックでログを開く">
               <td colSpan={5} className="muted">
-                戦闘開始（ここに戻る）
+                <span className="caret">{open.has("start") ? "▼" : "▶"}</span> 戦闘開始
               </td>
             </tr>
-            {turns.map((t, ti) =>
-              t.map((r, k) => {
+            {open.has("start") && (
+              <OpDetail colSpan={5} catalog={catalog} events={startEvents} current={cursor === null} onBack={() => jumpTo(null)} />
+            )}
+            {turns.map((t, ti) => {
+              // 開いた行の下にログの行が入るので、ターンの列はその分も縦に結合する
+              const span = t.length + t.filter((r) => open.has(r.node.id)).length;
+              return t.map((r, k) => {
                 const ws = warnings.filter((w) => w.opIndex === r.index);
                 const acts = r.step.result.attackActions;
                 const bursts = acts?.filter((a) => a.kind === "burst") ?? [];
-                const log = model.full.battle.state.log.slice(...r.step.result.eventRange);
-                const entered = log.filter((e) => e.type === "enterBattle");
-                return (
+                const events = log.slice(...r.step.result.eventRange);
+                const entered = events.filter((e) => e.type === "enterBattle");
+                const isOpen = open.has(r.node.id);
+                return [
                   <tr
                     key={r.node.id}
-                    className={`${r.node.id === cursor ? "current" : ""}${r.step.result.ok ? "" : " invalid"}`}
-                    onClick={() => jumpTo(r.node.id)}
-                    title="クリックでこの時点に戻る"
+                    className={`${r.node.id === cursor ? "current" : ""}${r.step.result.ok ? "" : " invalid"}${isOpen ? " open" : ""}`}
+                    onClick={() => toggle(r.node.id)}
+                    aria-expanded={isOpen}
+                    title="クリックでこの操作で起きたことを開く"
                   >
                     {k === 0 && (
-                      <td rowSpan={t.length} className="turncol">
+                      <td rowSpan={span} className="turncol" onClick={(e) => e.stopPropagation()}>
                         {ti + 1}
                       </td>
                     )}
-                    <td className="muted">{r.index + 1}</td>
+                    <td className="muted">
+                      <span className="caret">{isOpen ? "▼" : "▶"}</span> {r.index + 1}
+                    </td>
                     <td>{opLabel(catalog, r.op)}</td>
                     <td>
                       {!r.step.result.ok && <span className="badge danger">使用不可：{r.step.result.reasons.map((x) => UNUSABLE_LABEL[x]).join("・")}</span>}
@@ -123,10 +145,11 @@ export function ChartView({ catalog, chart, model, cursor, jumpTo, commit, notif
                     >
                       {r.node.memo ?? <span className="muted">＋</span>}
                     </td>
-                  </tr>
-                );
-              }),
-            )}
+                  </tr>,
+                  isOpen && <OpDetail key={`${r.node.id}-log`} colSpan={4} catalog={catalog} events={events} current={r.node.id === cursor} onBack={() => jumpTo(r.node.id)} />,
+                ];
+              });
+            })}
           </tbody>
         </table>
         {model.path.length === 0 && <p className="muted">まだ操作がない。プレイ画面で操作すると記録される。</p>}
@@ -152,6 +175,35 @@ export function ChartView({ catalog, chart, model, cursor, jumpTo, commit, notif
 
       <IoPanel chart={chart} commit={commit} notify={notify} />
     </div>
+  );
+}
+
+/** 開いた行：その操作で起きたこと（イベントログ）と、この時点に戻るボタン */
+function OpDetail({ colSpan, catalog, events, current, onBack }: { colSpan: number; catalog: Catalog; events: readonly BattleEvent[]; current: boolean; onBack: () => void }) {
+  const lines = eventLogLines(catalog, events);
+  return (
+    <tr className="opdetail">
+      <td colSpan={colSpan}>
+        <div className="opdetail-head">
+          <button onClick={onBack} disabled={current} title="プレイ画面をこの操作の直後の状態に戻す">
+            {current ? "今この時点を表示中" : "この時点に戻る"}
+          </button>
+        </div>
+        {lines.length === 0 ? (
+          <p className="muted small">この操作で起きたことはない。</p>
+        ) : (
+          <ol className="eventlog">
+            {lines.map((l, i) => (
+              <li key={l.key} className={l.byAssist ? "by-assist" : ""}>
+                {(i === 0 || lines[i - 1]!.phase !== l.phase) && <span className="phase">{PHASE_LABEL[l.phase]}</span>}
+                {l.text}
+                {l.times > 1 && <span className="times"> ×{l.times}</span>}
+              </li>
+            ))}
+          </ol>
+        )}
+      </td>
+    </tr>
   );
 }
 

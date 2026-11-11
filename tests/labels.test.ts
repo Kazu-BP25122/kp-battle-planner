@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { Battle } from "../src/engine";
 import { assistDisplayName } from "../src/schema/character";
-import { eventNotice } from "../src/components/labels";
+import { eventLogLines, eventNotice } from "../src/components/labels";
 import type { Catalog } from "../src/chart/input";
 import { amon, artemis, attack, beethoven, buffSlots, eve, makeInput, nextTurn, shaitan, use } from "./helpers";
 
@@ -14,7 +14,8 @@ const allIds = chars.flatMap((c) => [...c.abilities.map((a) => a.id), ...(c.assi
 
 describe("表示名", () => {
   it("名前の無いアシストは、分けた元のアシスト名・「アシスト n」・「<アビ名>（常時効果）」で表示する", () => {
-    expect(assistDisplayName(shaitan, "shaitan_assist1_limiterReset")).toBe("アシスト1");
+    expect(assistDisplayName(shaitan, "shaitan_assist1_limiterReset")).toBe("バハルタフリール");
+    expect(assistDisplayName({ ...shaitan, assists: shaitan.assists!.map(({ name: _n, ...a }) => a) }, "shaitan_assist2")).toBe("アシスト2");
     expect(assistDisplayName(shaitan, "shaitan_a3_passive")).toBe("ジャースウサハム（常時効果）");
     expect(assistDisplayName(amon, "amon_assist1_turnEnd")).toBe("ヴォルトパニッシュメント");
     expect(assistDisplayName(amon, "amon_a2_passive")).toBe("破滅雷撃+（常時効果）");
@@ -29,10 +30,37 @@ describe("表示名", () => {
     }
     const texts = [
       ...b.state.log.map((e) => eventNotice(catalog, e)).filter((x): x is string => x !== null),
+      ...eventLogLines(catalog, b.state.log).map((l) => l.text),
       ...b.state.warnings.map((w) => w.message),
       ...Object.values(b.state.chars).flatMap((c) => c.buffs.map((x) => x.sourceLabel)),
     ];
     expect(texts.length).toBeGreaterThan(0);
     for (const t of texts) for (const id of allIds) expect(t, t).not.toContain(id);
+  });
+
+  it("チャートのログ：操作で起きたことを並べ、同じ行が続けば ×n にまとめる。使用と同時の発動・非表示トークンは出さない", () => {
+    const b = new Battle(makeInput({ front1: beethoven, front2: shaitan }));
+    b.state.chars.beethoven!.tokens.紅の旋律 = 3;
+    const from = b.state.log.length;
+    b.apply(use("beethoven", "beethoven_a1"));
+    const lines = eventLogLines(catalog, b.state.log.slice(from));
+    expect(lines[0]!.text).toBe("ベートーヴェン「ナインズフォージョイ」使用");
+    expect(lines.find((l) => l.text.startsWith("ベートーヴェン ダメージ"))!.times).toBe(5);
+    expect(lines.some((l) => l.text.includes("紅の譜面 +1"))).toBe(true);
+    const from2 = b.state.log.length;
+    b.apply(use("shaitan", "shaitan_a1"));
+    b.apply(use("shaitan", "shaitan_a2"));
+    const texts = eventLogLines(catalog, b.state.log.slice(from2)).map((l) => l.text);
+    expect(texts.filter((t) => t.includes("シュイドオラアド+」使用"))).toHaveLength(1);
+    expect(texts).toContain("[波戯の愛霹]シャイターン「シュイドオラアド+」発動");
+    expect(texts).toContain("[波戯の愛霹]シャイターンのアシスト「バハルタフリール」発動");
+    expect(texts.join()).not.toContain("shaitan_limiterUses");
+  });
+
+  it("チャートのログ：通常攻撃は「通常攻撃 n 段」と「バーストゲージ m 上昇」の 2 行だけ", () => {
+    const b = new Battle(makeInput({ front1: eve }));
+    const from = b.state.log.length;
+    b.apply(attack({ eve: 3 }));
+    expect(eventLogLines(catalog, b.state.log.slice(from)).map((l) => l.text)).toEqual(["神代の始祖イヴ 通常攻撃 3段", "神代の始祖イヴ バーストゲージ 30 上昇"]);
   });
 });
