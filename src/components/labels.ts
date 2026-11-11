@@ -3,6 +3,7 @@ import type { ManualEvent, Op } from "../schema/chart";
 import type { BattleEvent, FailureReason } from "../engine";
 import { UNUSABLE_LABEL } from "../engine";
 import type { Phase } from "../schema/common";
+import { abilityDisplayName, assistDisplayName } from "../schema/character";
 
 export const PHASE_LABEL: Record<Phase, string> = {
   turnStart: "ターン開始",
@@ -19,7 +20,7 @@ export function charName(catalog: Catalog, id: string | null | undefined): strin
 }
 
 export function abilityName(catalog: Catalog, charId: string, abilityId: string): string {
-  return catalog.characters[charId]?.abilities.find((a) => a.id === abilityId)?.name ?? abilityId;
+  return abilityDisplayName(catalog.characters[charId], abilityId);
 }
 
 export function manualLabel(catalog: Catalog, e: ManualEvent): string {
@@ -71,8 +72,12 @@ const MEANS_LABEL: Record<string, string> = {
 /** 通知に出すイベント（ゲームの演出の代わり。§14.0） */
 export function eventNotice(catalog: Catalog, e: BattleEvent): string | null {
   switch (e.type) {
-    case "assistTriggered":
-      return `${charName(catalog, e.actor)}のアシスト「${catalog.characters[e.actor ?? ""]?.assists?.find((a) => a.id === e.assist)?.name ?? e.assist}」発動`;
+    case "assistTriggered": {
+      const def = catalog.characters[e.actor ?? ""];
+      // キャラ定義に無いアシストはユーザー補正の詳細入力（§4.9）
+      if (!def?.assists?.some((a) => a.id === e.assist)) return `${charName(catalog, e.actor)}のユーザー定義アシスト発動`;
+      return `${charName(catalog, e.actor)}のアシスト「${assistDisplayName(catalog.characters[e.actor ?? ""], e.assist ?? "")}」発動`;
+    }
     case "burst":
       return `${charName(catalog, e.actor)} バースト（消費 ${fmt(e.gaugeConsumed ?? 0)}${e.origin === "ability" ? "・アビ効果" : ""}）`;
     case "gaugeChanged":

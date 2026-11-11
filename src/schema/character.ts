@@ -117,5 +117,31 @@ export const Character = z
   });
 export type Character = z.infer<typeof Character>;
 
+/** アビの表示名（見つからなければ ID） */
+export function abilityDisplayName(c: Character | undefined, abilityId: string): string {
+  return c?.abilities.find((a) => a.id === abilityId)?.name ?? abilityId;
+}
+
+/**
+ * アシストの表示名（§4.2）。画面に ID を出さないための名前の決め方：
+ * 1. name があればそれ
+ * 2. 1 つのアシストを分けて書いた項目（origin.kind: "assist"）は、同じ origin の項目のどれかの name。無ければ「アシスト n」
+ * 3. アビの常時効果（origin.kind: "ability"）は「<アビ名>（常時効果）」
+ * 4. どれでもなければ、定義の並びでの番号で「アシスト n」
+ */
+export function assistDisplayName(c: Character | undefined, assistId: string): string {
+  const assists = c?.assists ?? [];
+  const a = assists.find((x) => x.id === assistId);
+  if (!a) return assistId;
+  if (a.name) return a.name;
+  const o = a.origin;
+  if (o?.kind === "assist") {
+    const sibling = assists.find((x) => x.name && x.origin?.kind === "assist" && x.origin.index === o.index);
+    return sibling?.name ?? `アシスト${o.index}`;
+  }
+  if (o?.kind === "ability") return `${abilityDisplayName(c, o.id)}（常時効果）`;
+  return `アシスト${assists.indexOf(a) + 1}`;
+}
+
 export const characterGaugeMax = (c: Character) => c.gaugeMax ?? 100;
 export const characterBurstConsume = (c: Character) => c.burstConsume ?? "subtract100";

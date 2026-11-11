@@ -2,6 +2,7 @@
  * アシストの処理（§6.1）。イベントキューから 1 件ずつ取り出し、そのタイミングのアシストを編成順に判定する。
  */
 import type { Cost } from "../schema/dsl";
+import { assistDisplayName } from "../schema/character";
 import type { Ctx, Exec } from "./context";
 import { emit, slotOf, step } from "./context";
 import { evalCondition } from "./conditions";
@@ -68,7 +69,7 @@ function assistExec(ctx: Ctx, oa: OwnedAssist, ev: BattleEvent, timingStart: num
     assist: oa.assist.id,
     // TODO(spec): §11 アシストが与えるダメージの攻撃区分の既定値は未確定（damage は category 必須なので使わない）
     defaultCategory: "ability",
-    label: `${d.name} ${oa.assist.name ?? oa.assist.id}${oa.user ? "（ユーザー補正）" : ""}`,
+    label: `${d.name} ${oa.user ? (oa.assist.name ?? "ユーザー定義") : assistDisplayName(d, oa.assist.id)}${oa.user ? "（ユーザー補正）" : ""}`,
     window: { upTo: ev.seq, from: timingStart },
     triggerEvent: ev,
     dealtDamage: false,

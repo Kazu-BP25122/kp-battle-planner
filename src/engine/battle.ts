@@ -2,6 +2,7 @@
  * ターン進行（§5）と操作の適用。チャートデータの操作を 1 件ずつ受け取って状態を進める。
  */
 import type { ManualEvent, Op } from "../schema/chart";
+import { abilityDisplayName } from "../schema/character";
 import type { Ctx, Exec } from "./context";
 import { StepLimitError, activeMainIds, charLabel, createCtx, emit, isActiveMain, slotOf, warn } from "./context";
 import { processQueue } from "./assists";
@@ -89,7 +90,7 @@ export class Battle {
           if (reasons.length > 0) {
             result.ok = false;
             result.reasons = reasons;
-            warn(ctx, "opInvalid", `${charLabel(ctx, op.charId)}の「${op.abilityId}」は使用できない`, op.charId);
+            warn(ctx, "opInvalid", `${charLabel(ctx, op.charId)}の「${abilityDisplayName(ctx.input.characters[op.charId], op.abilityId)}」は使用できない`, op.charId);
             return;
           }
           useAbility(ctx, op.charId, op.abilityId, op.chosenAlly);
