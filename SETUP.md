@@ -52,7 +52,6 @@ AGENTS/              仕様と資料（編集するときはクライアント�
   CHARACTER.md       キャラごとの資料・確定状況・検証の記録
   CHARACTER_DATA_GUIDE.md  説明文からキャラ定義 JSON を作る手順
   DSL_PARTS.md       効果 DSL の部品の一覧表
-  *.json             キャラ定義・枠の一覧の原本（src/content/ と同じ内容に保つ）
 astro.config.mjs     Astro の設定（React 連携）
 vitest.config.ts     テストの設定（tests/**/*.test.{ts,tsx}）
 src/

@@ -66,7 +66,6 @@ AGENTS/
   CHARACTER_DATA_GUIDE.md  # ゲームの説明文からキャラ定義 JSON を作る手順（§12）
   DSL_PARTS.md     # 効果 DSL の部品の一覧表（§10）
   CHARACTER.md     # キャラごとの資料・定義の下書き・未確定事項（§12）
-  *.json           # クライアントから受け取ったキャラ定義・枠の一覧（src/content/ と同じ内容に保つ）
 src/
   engine/          # 純粋TS。状態・ターン進行・判定・効果処理
     effects/       # 効果部品（registry）

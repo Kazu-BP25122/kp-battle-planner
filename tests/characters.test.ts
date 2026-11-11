@@ -227,14 +227,14 @@ describe("シャイターン", () => {
     expect(evs(b, "abilityActivated", (e) => e.ability === "shaitan_a2" && e.turn === 1)).toHaveLength(15);
   });
 
-  it("アシスト 2：雷属性キャラの赤アビ使用 5 回ごとにアビ 2 の CT 0・雷属性の味方のゲージ +20", () => {
+  it("アシスト 2：雷属性キャラの赤アビ使用 5 回ごとにアビ 2 の CT 0・雷属性の味方のゲージ +10", () => {
     const b = setup();
     b.apply(use("shaitan", "shaitan_a2")); // 赤 1 回目。CT 99
     for (const op of times(3, use("m", "m_red"))) b.apply(op);
     expect(ct(b).shaitan_a2).toBe(99);
     b.apply(use("m", "m_red")); // 5 回目
     expect(ct(b).shaitan_a2).toBe(0);
-    expect(b.state.chars.m!.gauge).toBe(20);
+    expect(b.state.chars.m!.gauge).toBe(10);
   });
 
   it("アビ 1：n 回目の発動で n ターン（5 まで）。付け直すと残りに足さず置き換える", () => {
