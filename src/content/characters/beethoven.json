@@ -1,0 +1,1280 @@
+{
+  "id": "beethoven",
+  "name": "ベートーヴェン",
+  "kind": "hero",
+  "element": "thunder",
+  "gaugeMax": 100,
+  "burstConsume": "subtract100",
+  "options": [
+    {
+      "id": "exclusiveWeapon",
+      "name": "専用武器",
+      "type": "boolean",
+      "default": true
+    }
+  ],
+  "burst": {
+    "name": "マグヌム・オプス",
+    "userDefined": true,
+    "effects": [
+      {
+        "type": "damage",
+        "target": "allEnemies",
+        "category": "burst",
+        "hits": 1,
+        "note": "極大"
+      },
+      {
+        "type": "changeCT",
+        "target": "self",
+        "abilities": "all",
+        "amount": -1
+      }
+    ],
+    "note": "武器で変わる。effects はゲーム画面（2026-11-11 のスクリーンショット）の効果で、ユーザーが設定しないときの既定値"
+  },
+  "tokenGroups": [
+    {
+      "name": "旋律",
+      "max": 3
+    },
+    {
+      "name": "譜面"
+    }
+  ],
+  "tokens": [
+    {
+      "name": "紅の旋律",
+      "group": "旋律"
+    },
+    {
+      "name": "黄の旋律",
+      "group": "旋律"
+    },
+    {
+      "name": "蒼の旋律",
+      "group": "旋律"
+    },
+    {
+      "name": "翠の旋律",
+      "group": "旋律"
+    },
+    {
+      "name": "紅の譜面",
+      "group": "譜面",
+      "max": 5
+    },
+    {
+      "name": "黄の譜面",
+      "group": "譜面",
+      "max": 5
+    },
+    {
+      "name": "蒼の譜面",
+      "group": "譜面",
+      "max": 5
+    },
+    {
+      "name": "翠の譜面",
+      "group": "譜面",
+      "max": 5
+    }
+  ],
+  "abilities": [
+    {
+      "id": "beethoven_a1",
+      "name": "ナインズフォージョイ",
+      "color": "yellow",
+      "ct": 0,
+      "usable": {
+        "token": {
+          "group": "旋律",
+          "gte": 3
+        }
+      },
+      "effects": [
+        {
+          "type": "switch",
+          "cases": [
+            {
+              "cond": {
+                "token": {
+                  "name": "紅の旋律",
+                  "gte": 3
+                }
+              },
+              "then": [
+                {
+                  "type": "consumeToken",
+                  "target": "self",
+                  "group": "旋律",
+                  "amount": "all"
+                },
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "紅の譜面",
+                  "amount": 1
+                },
+                {
+                  "type": "damage",
+                  "target": "randomEnemy",
+                  "category": "ability",
+                  "hits": 5,
+                  "note": "減衰40万"
+                }
+              ]
+            },
+            {
+              "cond": {
+                "token": {
+                  "name": "黄の旋律",
+                  "gte": 3
+                }
+              },
+              "then": [
+                {
+                  "type": "consumeToken",
+                  "target": "self",
+                  "group": "旋律",
+                  "amount": "all"
+                },
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "黄の譜面",
+                  "amount": 1
+                },
+                {
+                  "type": "addBuff",
+                  "target": "allAllies",
+                  "buff": "急所攻撃確率UP",
+                  "slot": "weakpointRateUp",
+                  "amount": null,
+                  "stack": {
+                    "max": "unknown",
+                    "duration": "unknown"
+                  },
+                  "duration": {
+                    "turns": null
+                  }
+                }
+              ]
+            },
+            {
+              "cond": {
+                "token": {
+                  "name": "蒼の旋律",
+                  "gte": 3
+                }
+              },
+              "then": [
+                {
+                  "type": "consumeToken",
+                  "target": "self",
+                  "group": "旋律",
+                  "amount": "all"
+                },
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "蒼の譜面",
+                  "amount": 1
+                },
+                {
+                  "type": "addStatus",
+                  "target": "allEnemies",
+                  "status": "ランダムな状態異常",
+                  "duration": {
+                    "turns": null
+                  }
+                }
+              ]
+            },
+            {
+              "cond": {
+                "token": {
+                  "name": "翠の旋律",
+                  "gte": 3
+                }
+              },
+              "then": [
+                {
+                  "type": "consumeToken",
+                  "target": "self",
+                  "group": "旋律",
+                  "amount": "all"
+                },
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "翠の譜面",
+                  "amount": 1
+                },
+                {
+                  "type": "addBuff",
+                  "target": "allAllies",
+                  "buff": "リジェネ",
+                  "slot": "regen",
+                  "amount": null,
+                  "duration": {
+                    "turns": null
+                  }
+                },
+                {
+                  "type": "addBuff",
+                  "target": "allAllies",
+                  "buff": "被回復上限UP",
+                  "slot": "healCapUp",
+                  "amount": null,
+                  "duration": {
+                    "turns": null
+                  }
+                }
+              ]
+            },
+            {
+              "cond": {
+                "and": [
+                  {
+                    "token": {
+                      "name": "黄の旋律",
+                      "gte": 1
+                    }
+                  },
+                  {
+                    "token": {
+                      "name": "蒼の旋律",
+                      "gte": 1
+                    }
+                  },
+                  {
+                    "token": {
+                      "name": "翠の旋律",
+                      "gte": 1
+                    }
+                  }
+                ]
+              },
+              "then": [
+                {
+                  "type": "consumeToken",
+                  "target": "self",
+                  "group": "旋律",
+                  "amount": "all"
+                },
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "紅の譜面",
+                  "amount": 1
+                },
+                {
+                  "type": "damage",
+                  "target": "allEnemies",
+                  "category": "ability",
+                  "hits": 2,
+                  "note": "減衰200万"
+                }
+              ]
+            },
+            {
+              "cond": {
+                "and": [
+                  {
+                    "token": {
+                      "name": "紅の旋律",
+                      "gte": 1
+                    }
+                  },
+                  {
+                    "token": {
+                      "name": "蒼の旋律",
+                      "gte": 1
+                    }
+                  },
+                  {
+                    "token": {
+                      "name": "翠の旋律",
+                      "gte": 1
+                    }
+                  }
+                ]
+              },
+              "then": [
+                {
+                  "type": "consumeToken",
+                  "target": "self",
+                  "group": "旋律",
+                  "amount": "all"
+                },
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "黄の譜面",
+                  "amount": 1
+                },
+                {
+                  "type": "addBuff",
+                  "target": "allAllies",
+                  "buff": "会心",
+                  "slot": "critical",
+                  "amount": null,
+                  "duration": {
+                    "turns": null
+                  }
+                },
+                {
+                  "type": "addBuff",
+                  "target": "allAllies",
+                  "buff": "旺盛",
+                  "slot": "vigor",
+                  "amount": null,
+                  "duration": {
+                    "turns": null
+                  }
+                }
+              ]
+            },
+            {
+              "cond": {
+                "and": [
+                  {
+                    "token": {
+                      "name": "紅の旋律",
+                      "gte": 1
+                    }
+                  },
+                  {
+                    "token": {
+                      "name": "黄の旋律",
+                      "gte": 1
+                    }
+                  },
+                  {
+                    "token": {
+                      "name": "翠の旋律",
+                      "gte": 1
+                    }
+                  }
+                ]
+              },
+              "then": [
+                {
+                  "type": "consumeToken",
+                  "target": "self",
+                  "group": "旋律",
+                  "amount": "all"
+                },
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "蒼の譜面",
+                  "amount": 1
+                },
+                {
+                  "type": "addDebuff",
+                  "target": "allEnemies",
+                  "buff": "攻撃DOWN",
+                  "slot": "beethoven_atkDown",
+                  "amount": null,
+                  "stack": {
+                    "max": "unknown",
+                    "duration": "unknown"
+                  },
+                  "duration": {
+                    "turns": null
+                  },
+                  "note": "専用/必中/累積"
+                },
+                {
+                  "type": "addDebuff",
+                  "target": "allEnemies",
+                  "buff": "防御DOWN",
+                  "slot": "beethoven_defDown",
+                  "amount": null,
+                  "stack": {
+                    "max": "unknown",
+                    "duration": "unknown"
+                  },
+                  "duration": {
+                    "turns": null
+                  },
+                  "note": "専用/必中/累積"
+                }
+              ]
+            },
+            {
+              "cond": {
+                "and": [
+                  {
+                    "token": {
+                      "name": "紅の旋律",
+                      "gte": 1
+                    }
+                  },
+                  {
+                    "token": {
+                      "name": "黄の旋律",
+                      "gte": 1
+                    }
+                  },
+                  {
+                    "token": {
+                      "name": "蒼の旋律",
+                      "gte": 1
+                    }
+                  }
+                ]
+              },
+              "then": [
+                {
+                  "type": "consumeToken",
+                  "target": "self",
+                  "group": "旋律",
+                  "amount": "all"
+                },
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "翠の譜面",
+                  "amount": 1
+                },
+                {
+                  "type": "heal",
+                  "target": "allAllies"
+                }
+              ]
+            }
+          ],
+          "default": [
+            {
+              "type": "consumeToken",
+              "target": "self",
+              "group": "旋律",
+              "amount": "all"
+            },
+            {
+              "type": "addBuff",
+              "target": "allAllies",
+              "buff": "異常耐性UP",
+              "slot": "ailmentResUp",
+              "amount": null,
+              "stack": {
+                "max": "unknown",
+                "duration": "unknown"
+              },
+              "duration": {
+                "turns": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "beethoven_a2",
+      "name": "ワールドカオスプロダクト",
+      "color": "yellow",
+      "ct": 8,
+      "effects": [
+        {
+          "type": "useEffects",
+          "id": "scoreEffects"
+        }
+      ]
+    },
+    {
+      "id": "beethoven_a3",
+      "name": "デスペアフォルテシモ",
+      "color": "yellow",
+      "ct": 8,
+      "limit": {
+        "perTurn": 1
+      },
+      "effects": [
+        {
+          "type": "changeCT",
+          "target": {
+            "alliesWhere": {
+              "excludeSelf": true
+            }
+          },
+          "abilities": {
+            "color": "red"
+          },
+          "amount": {
+            "token": {
+              "name": "紅の譜面"
+            },
+            "mul": -1
+          }
+        },
+        {
+          "type": "changeCT",
+          "target": {
+            "alliesWhere": {
+              "excludeSelf": true
+            }
+          },
+          "abilities": {
+            "color": "yellow"
+          },
+          "amount": {
+            "token": {
+              "name": "黄の譜面"
+            },
+            "mul": -1
+          }
+        },
+        {
+          "type": "changeCT",
+          "target": {
+            "alliesWhere": {
+              "excludeSelf": true
+            }
+          },
+          "abilities": {
+            "color": "blue"
+          },
+          "amount": {
+            "token": {
+              "name": "蒼の譜面"
+            },
+            "mul": -1
+          }
+        },
+        {
+          "type": "changeCT",
+          "target": {
+            "alliesWhere": {
+              "excludeSelf": true
+            }
+          },
+          "abilities": {
+            "color": "green"
+          },
+          "amount": {
+            "token": {
+              "name": "翠の譜面"
+            },
+            "mul": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "beethoven_a4",
+      "name": "カーヴレヴェルリィ",
+      "color": "yellow",
+      "ct": 2,
+      "effects": [
+        {
+          "type": "switch",
+          "cases": [
+            {
+              "cond": {
+                "useCount": {
+                  "ability": "self",
+                  "scope": "battle",
+                  "kind": "activated",
+                  "mod": {
+                    "by": 4,
+                    "eq": 1
+                  }
+                }
+              },
+              "then": [
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "紅の譜面",
+                  "amount": 1
+                }
+              ]
+            },
+            {
+              "cond": {
+                "useCount": {
+                  "ability": "self",
+                  "scope": "battle",
+                  "kind": "activated",
+                  "mod": {
+                    "by": 4,
+                    "eq": 2
+                  }
+                }
+              },
+              "then": [
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "黄の譜面",
+                  "amount": 1
+                }
+              ]
+            },
+            {
+              "cond": {
+                "useCount": {
+                  "ability": "self",
+                  "scope": "battle",
+                  "kind": "activated",
+                  "mod": {
+                    "by": 4,
+                    "eq": 3
+                  }
+                }
+              },
+              "then": [
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "蒼の譜面",
+                  "amount": 1
+                }
+              ]
+            }
+          ],
+          "default": [
+            {
+              "type": "addToken",
+              "target": "self",
+              "name": "翠の譜面",
+              "amount": 1
+            }
+          ]
+        }
+      ],
+      "ex": true
+    }
+  ],
+  "assists": [
+    {
+      "id": "beethoven_assist1",
+      "name": "ラストシンフォニー",
+      "trigger": {
+        "event": "abilityUsed",
+        "filter": {
+          "sourceElement": "thunder",
+          "source": "others"
+        }
+      },
+      "effects": [
+        {
+          "type": "switch",
+          "cases": [
+            {
+              "cond": {
+                "trigger": {
+                  "color": "red"
+                }
+              },
+              "then": [
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "紅の旋律",
+                  "amount": 1
+                }
+              ]
+            },
+            {
+              "cond": {
+                "trigger": {
+                  "color": "yellow"
+                }
+              },
+              "then": [
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "黄の旋律",
+                  "amount": 1
+                }
+              ]
+            },
+            {
+              "cond": {
+                "trigger": {
+                  "color": "blue"
+                }
+              },
+              "then": [
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "蒼の旋律",
+                  "amount": 1
+                }
+              ]
+            },
+            {
+              "cond": {
+                "trigger": {
+                  "color": "green"
+                }
+              },
+              "then": [
+                {
+                  "type": "addToken",
+                  "target": "self",
+                  "name": "翠の旋律",
+                  "amount": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "beethoven_assist2",
+      "name": "ミスティカルオルケストラ",
+      "trigger": {
+        "event": "turnEnd"
+      },
+      "effects": [
+        {
+          "type": "useEffects",
+          "id": "scoreEffects"
+        },
+        {
+          "type": "consumeToken",
+          "target": "self",
+          "group": "譜面",
+          "amount": "all"
+        },
+        {
+          "type": "consumeToken",
+          "target": "self",
+          "group": "旋律",
+          "amount": "all"
+        }
+      ]
+    }
+  ],
+  "sharedEffects": {
+    "scoreEffects": [
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "蒼の譜面",
+            "gte": 1
+          }
+        },
+        "then": [
+          {
+            "type": "repeat",
+            "times": {
+              "token": {
+                "name": "蒼の譜面"
+              }
+            },
+            "effects": [
+              {
+                "type": "addDebuff",
+                "target": "allEnemies",
+                "buff": "攻撃DOWN",
+                "slot": "beethoven_atkDown",
+                "amount": null,
+                "stack": {
+                  "max": "unknown",
+                  "duration": "unknown"
+                },
+                "duration": {
+                  "turns": 6
+                },
+                "note": "専用/必中/累積"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "蒼の譜面",
+            "gte": 2
+          }
+        },
+        "then": [
+          {
+            "type": "repeat",
+            "times": {
+              "token": {
+                "name": "蒼の譜面"
+              }
+            },
+            "effects": [
+              {
+                "type": "addDebuff",
+                "target": "allEnemies",
+                "buff": "防御DOWN",
+                "slot": "beethoven_defDown",
+                "amount": null,
+                "stack": {
+                  "max": "unknown",
+                  "duration": "unknown"
+                },
+                "duration": {
+                  "turns": 6
+                },
+                "note": "専用/必中/累積"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "蒼の譜面",
+            "gte": 3
+          }
+        },
+        "then": [
+          {
+            "type": "addDebuff",
+            "target": "allEnemies",
+            "buff": "与ダメージDOWN",
+            "slot": "dmgDealtDown",
+            "amount": 30,
+            "duration": {
+              "turns": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "蒼の譜面",
+            "gte": 4
+          }
+        },
+        "then": [
+          {
+            "type": "addStatus",
+            "target": "allEnemies",
+            "status": "魔力封印",
+            "duration": {
+              "turns": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "蒼の譜面",
+            "gte": 5
+          }
+        },
+        "then": [
+          {
+            "type": "addDebuff",
+            "target": "allEnemies",
+            "buff": "通常攻撃耐性DOWN",
+            "slot": "normalResDown",
+            "amount": null,
+            "duration": {
+              "turns": null
+            }
+          },
+          {
+            "type": "addDebuff",
+            "target": "allEnemies",
+            "buff": "バースト耐性DOWN",
+            "slot": "burstResDown",
+            "amount": null,
+            "duration": {
+              "turns": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "黄の譜面",
+            "gte": 1
+          }
+        },
+        "then": [
+          {
+            "type": "repeat",
+            "times": {
+              "token": {
+                "name": "黄の譜面"
+              }
+            },
+            "effects": [
+              {
+                "type": "addBuff",
+                "target": "allAllies",
+                "buff": "攻撃UP",
+                "slot": "beethoven_atkUp",
+                "amount": null,
+                "stack": {
+                  "max": "unknown",
+                  "duration": "unknown"
+                },
+                "duration": {
+                  "turns": null
+                }
+              },
+              {
+                "type": "addBuff",
+                "target": "allAllies",
+                "buff": "防御UP",
+                "slot": "beethoven_defUp",
+                "amount": null,
+                "stack": {
+                  "max": "unknown",
+                  "duration": "unknown"
+                },
+                "duration": {
+                  "turns": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "and": [
+            {
+              "token": {
+                "name": "黄の譜面",
+                "gte": 2
+              }
+            },
+            {
+              "option": {
+                "id": "exclusiveWeapon",
+                "is": true
+              }
+            }
+          ]
+        },
+        "then": [
+          {
+            "type": "repeat",
+            "times": {
+              "token": {
+                "name": "黄の譜面"
+              }
+            },
+            "effects": [
+              {
+                "type": "gaugeUp",
+                "target": "allAllies",
+                "amount": 15
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "and": [
+            {
+              "token": {
+                "name": "黄の譜面",
+                "gte": 2
+              }
+            },
+            {
+              "option": {
+                "id": "exclusiveWeapon",
+                "is": false
+              }
+            }
+          ]
+        },
+        "then": [
+          {
+            "type": "repeat",
+            "times": {
+              "token": {
+                "name": "黄の譜面"
+              }
+            },
+            "effects": [
+              {
+                "type": "gaugeUp",
+                "target": "allAllies",
+                "amount": 10
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "黄の譜面",
+            "gte": 3
+          }
+        },
+        "then": [
+          {
+            "type": "repeat",
+            "times": {
+              "token": {
+                "name": "黄の譜面"
+              }
+            },
+            "effects": [
+              {
+                "type": "addBuff",
+                "target": "allAllies",
+                "buff": "全攻撃性能UP",
+                "slot": "allAtkPerfUp",
+                "amount": null,
+                "stack": {
+                  "max": "unknown",
+                  "duration": "unknown"
+                },
+                "duration": {
+                  "turns": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "黄の譜面",
+            "gte": 4
+          }
+        },
+        "then": [
+          {
+            "type": "repeat",
+            "times": {
+              "token": {
+                "name": "黄の譜面"
+              }
+            },
+            "effects": [
+              {
+                "type": "addBuff",
+                "target": "allAllies",
+                "buff": "全攻撃ダメージプラス",
+                "slot": "allDmgPlus",
+                "amount": null,
+                "stack": {
+                  "max": "unknown",
+                  "duration": "unknown"
+                },
+                "duration": {
+                  "turns": null
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "黄の譜面",
+            "gte": 5
+          }
+        },
+        "then": [
+          {
+            "type": "addBuff",
+            "target": "allAllies",
+            "buff": "特殊攻撃UP",
+            "slot": "specialAtkUp",
+            "amount": null,
+            "duration": {
+              "turns": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "翠の譜面",
+            "gte": 1
+          }
+        },
+        "then": [
+          {
+            "type": "heal",
+            "target": "allAllies",
+            "note": "譜面の数で効果量増加"
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "翠の譜面",
+            "gte": 2
+          }
+        },
+        "then": [
+          {
+            "type": "removeDebuff",
+            "target": "allAllies",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "翠の譜面",
+            "gte": 3
+          }
+        },
+        "then": [
+          {
+            "type": "addBuff",
+            "target": "allAllies",
+            "buff": "被ダメージカット",
+            "slot": "damageCutRate",
+            "amount": 25,
+            "duration": {
+              "turns": null
+            }
+          },
+          {
+            "type": "addStatus",
+            "target": "allAllies",
+            "status": "防壁",
+            "duration": {
+              "turns": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "翠の譜面",
+            "gte": 4
+          }
+        },
+        "then": [
+          {
+            "type": "addBuff",
+            "target": "allAllies",
+            "buff": "被ダメージマイナス",
+            "slot": "damageCut",
+            "amount": 1000,
+            "duration": {
+              "turns": null
+            }
+          },
+          {
+            "type": "addStatus",
+            "target": "allAllies",
+            "status": "状態異常吸収",
+            "duration": {
+              "turns": null
+            }
+          },
+          {
+            "type": "addBuff",
+            "target": "allAllies",
+            "buff": "防御2倍",
+            "slot": "defDouble",
+            "amount": null,
+            "duration": {
+              "turns": null
+            }
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "翠の譜面",
+            "gte": 5
+          }
+        },
+        "then": [
+          {
+            "type": "addStatus",
+            "target": "allAllies",
+            "status": "バーストヒール",
+            "duration": {
+              "turns": null
+            }
+          },
+          {
+            "type": "addStatus",
+            "target": "allAllies",
+            "status": "トランスドレイン",
+            "duration": {
+              "turns": null
+            }
+          },
+          {
+            "type": "addStatus",
+            "target": "allAllies",
+            "status": "サステイン",
+            "duration": {
+              "turns": null
+            }
+          },
+          {
+            "type": "custom",
+            "id": "beethoven_cureBottle",
+            "note": "キュアボトルを1つ生成（アイテムは初期版の対象外。何もしない）"
+          }
+        ]
+      },
+      {
+        "type": "if",
+        "cond": {
+          "token": {
+            "name": "紅の譜面",
+            "gte": 1
+          }
+        },
+        "then": [
+          {
+            "type": "damage",
+            "target": "allEnemies",
+            "category": "ability",
+            "hits": {
+              "token": {
+                "name": "紅の譜面"
+              },
+              "mul": 6
+            },
+            "note": "減衰30万"
+          }
+        ]
+      }
+    ]
+  },
+  "source": "クライアント提供の資料と確認（2026-11-11）。効果量 null は未調査"
+}

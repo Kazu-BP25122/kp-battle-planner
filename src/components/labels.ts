@@ -72,7 +72,7 @@ const MEANS_LABEL: Record<string, string> = {
 export function eventNotice(catalog: Catalog, e: BattleEvent): string | null {
   switch (e.type) {
     case "assistTriggered":
-      return `${charName(catalog, e.actor)}のアシスト「${catalog.characters[e.actor ?? ""]?.assists.find((a) => a.id === e.assist)?.name ?? e.assist}」発動`;
+      return `${charName(catalog, e.actor)}のアシスト「${catalog.characters[e.actor ?? ""]?.assists?.find((a) => a.id === e.assist)?.name ?? e.assist}」発動`;
     case "burst":
       return `${charName(catalog, e.actor)} バースト（消費 ${fmt(e.gaugeConsumed ?? 0)}${e.origin === "ability" ? "・アビ効果" : ""}）`;
     case "gaugeChanged":
@@ -80,11 +80,20 @@ export function eventNotice(catalog: Catalog, e: BattleEvent): string | null {
     case "buffMissed":
       return `MISS：${charName(catalog, e.target)}の「${e.buff}」`;
     case "enterBattle":
-      return `${charName(catalog, e.actor)} 登場（${e.route === "swap" ? "交代" : "補充"}）`;
+      return `${charName(catalog, e.actor)} 登場（${e.via === "swap" ? "交代" : "補充"}）`;
     case "swappedOut":
       return `${charName(catalog, e.actor)} サブへ`;
     case "knockedOut":
       return `${charName(catalog, e.actor)} 戦闘不能`;
+    case "abilityActivated":
+      if (e.route !== "effect") return null;
+      return `${charName(catalog, e.actor)}「${abilityName(catalog, e.actor ?? "", e.ability ?? "")}」発動`;
+    case "tokenAdded":
+    case "tokenConsumed": {
+      // 非表示のトークン（内部カウンター）は通知しない
+      if (catalog.characters[e.actor ?? ""]?.tokens?.find((t) => t.name === e.token)?.hidden) return null;
+      return `${charName(catalog, e.actor)} ${e.token} ${e.type === "tokenAdded" ? "+" : "-"}${e.amount}`;
+    }
     case "normalAttack":
       return `${charName(catalog, e.actor)} 通常攻撃 ${e.combo}段${e.origin === "ability" ? "（アビ効果）" : ""}`;
     default:

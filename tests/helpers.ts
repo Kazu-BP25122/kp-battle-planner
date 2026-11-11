@@ -2,15 +2,40 @@
  * テスト用のヘルパー。tests/ の架空キャラはエンジンの単体テスト専用（初期リリースのデータには使わない。§15.2）。
  */
 import { Character } from "../src/schema/character";
-import { BuffSlotList } from "../src/schema/buffSlot";
+import { BuffSlotFile } from "../src/schema/buffSlot";
 import { DEFAULT_SETTINGS, type CharCorrection, type Op, type Party, type Settings } from "../src/schema/chart";
 import type { Character as CharacterT } from "../src/schema/character";
 import type { EngineInput } from "../src/engine";
 import buffSlotsJson from "../src/content/buffSlots.json";
 import eveJson from "../src/content/characters/eve.json";
+import beethovenJson from "../src/content/characters/beethoven.json";
+import shaitanJson from "../src/content/characters/shaitan.json";
+import amonJson from "../src/content/characters/amon.json";
+import artemisJson from "../src/content/characters/artemis.json";
 
-export const buffSlots = BuffSlotList.parse(buffSlotsJson);
+/**
+ * 枠の一覧。実データ（src/content/buffSlots.json）に、架空キャラの単体テスト専用の枠を足したもの。
+ * テスト専用の枠は実データには入れない（初期 5 体が使わない仕組み：ゲージ上昇量アップ・デバフ下限など）。
+ */
+export const realBuffSlots = BuffSlotFile.parse(buffSlotsJson).slots;
+export const buffSlots = [
+  ...realBuffSlots,
+  ...BuffSlotFile.parse({
+    slots: [
+      { id: "test_gaugeRateUp", name: "バーストゲージ上昇量UP（テスト用）", polarity: "buff", engineEffect: "gaugeRate" },
+      { id: "test_turnEndGauge", name: "ターン終了時ゲージ上昇（テスト用）", polarity: "buff", engineEffect: "turnEndGauge" },
+      { id: "atkDownA", name: "攻撃力ダウン A 枠（テスト用）", polarity: "debuff", floorGroup: "atkDown", floor: 50 },
+      { id: "atkDownB", name: "攻撃力ダウン B 枠（テスト用）", polarity: "debuff", floorGroup: "atkDown", floor: 50 },
+      { id: "atkDownC", name: "攻撃力ダウン C 枠（テスト用）", polarity: "debuff", floorGroup: "atkDown", floor: 50 },
+    ],
+  }).slots,
+];
+/** 初期リリースの 5 体（§15.2） */
 export const eve = Character.parse(eveJson);
+export const beethoven = Character.parse(beethovenJson);
+export const shaitan = Character.parse(shaitanJson);
+export const amon = Character.parse(amonJson);
+export const artemis = Character.parse(artemisJson);
 
 type CharInput = Omit<CharacterT, "kind" | "element" | "burst" | "abilities" | "assists"> &
   Partial<Pick<CharacterT, "kind" | "element" | "burst" | "abilities" | "assists">>;
@@ -18,9 +43,9 @@ type CharInput = Omit<CharacterT, "kind" | "element" | "burst" | "abilities" | "
 /** 架空キャラ（Zod で検証してから返す） */
 export function char(c: CharInput): CharacterT {
   return Character.parse({
-    kind: "princess",
+    kind: "kamihime",
     element: "thunder",
-    burst: { effects: [{ type: "damage", target: "enemy", category: "burst" }] },
+    burst: { effects: [{ type: "damage", target: "allEnemies", category: "burst" }] },
     abilities: [],
     assists: [],
     ...c,
@@ -32,7 +57,7 @@ export function redThunder(id: string, extra: Partial<CharInput> = {}): Characte
   return char({
     id,
     name: id,
-    abilities: [{ id: `${id}_red`, name: "赤アビ", color: "red", ct: 0, category: "ability", effects: [{ type: "damage", target: "enemy" }] }],
+    abilities: [{ id: `${id}_red`, name: "赤アビ", color: "red", ct: 0, effects: [{ type: "damage", target: "enemy", category: "ability" }] }],
     ...extra,
   });
 }

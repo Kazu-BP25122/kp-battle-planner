@@ -36,6 +36,10 @@ export type Category = z.infer<typeof Category>;
 export const Phase = z.enum(["turnStart", "action", "attack", "enemy", "turnEnd"]);
 export type Phase = z.infer<typeof Phase>;
 
+/** 種別（§4.2）：神姫 / 英霊 */
+export const Kind = z.enum(["kamihime", "hero"]);
+export type Kind = z.infer<typeof Kind>;
+
 /** ポジション（§4.4） */
 export const Position = z.enum(["hero", "front", "back", "sub"]);
 export type Position = z.infer<typeof Position>;
@@ -49,6 +53,7 @@ export const EVENT_TYPES = [
   "turnStart",
   "turnEnd",
   "abilityUsed",
+  "abilityActivated",
   "normalAttack",
   "burst",
   "damage",
@@ -65,6 +70,8 @@ export const EVENT_TYPES = [
   "enterBattle",
   "swappedOut",
   "knockedOut",
+  "tokenAdded",
+  "tokenConsumed",
 ] as const;
 export const EventType = z.enum(EVENT_TYPES);
 export type EventType = z.infer<typeof EventType>;
@@ -92,6 +99,8 @@ export const NumCompare = z
     eq: z.number().optional(),
     multipleOf: z.number().int().positive().optional(),
     parity: z.enum(["odd", "even"]).optional(),
+    /** N で割った余りが M（§10.2 useCount の mod。parity・multipleOf はこの省略形） */
+    mod: z.object({ by: z.number().int().positive(), eq: z.number().int().min(0) }).strict().optional(),
   })
   .strict();
 export type NumCompare = z.infer<typeof NumCompare>;

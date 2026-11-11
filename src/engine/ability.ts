@@ -11,6 +11,7 @@ import { runEffect } from "./effects";
 import { consumeCountBuffs } from "./buffs";
 import { countEvents } from "./query";
 import { needsChosenAlly } from "./targets";
+import { evalValue } from "./values";
 import type { UnusableReason } from "./types";
 
 export function findAbility(ctx: Ctx, charId: string, abilityId: string): Ability | undefined {
@@ -22,7 +23,7 @@ function abilityExec(ctx: Ctx, charId: string, ab: Ability, chosenAlly: string |
     self: charId,
     sourceKind: "ability",
     ability: ab.id,
-    defaultCategory: ab.category ?? "ability",
+    defaultCategory: "ability",
     label: `${charLabel(ctx, charId)} ${ab.name}`,
     dealtDamage: false,
   };
@@ -30,7 +31,10 @@ function abilityExec(ctx: Ctx, charId: string, ab: Ability, chosenAlly: string |
   return exec;
 }
 
-/** 使えない理由の一覧。空なら使用可能（§6 アビリティの使用判定） */
+/**
+ * 使えない理由の一覧。空なら使用可能（§6 アビリティの使用判定）。
+ * 使う前に評価するので、useCount・回数上限は今回の使用を含まない（§6 コスト）。
+ */
 export function abilityUnusableReasons(ctx: Ctx, charId: string, abilityId: string, chosenAlly?: string): UnusableReason[] {
   const ab = findAbility(ctx, charId, abilityId);
   const c = ctx.state.chars[charId];
@@ -40,14 +44,14 @@ export function abilityUnusableReasons(ctx: Ctx, charId: string, abilityId: stri
   if (c.knockedOut) reasons.push("knockedOut");
   else if (!isActiveMain(ctx, charId)) reasons.push("notInMain");
   if ((c.ct[ab.id] ?? 0) > 0) reasons.push("ct");
-  const q = { event: "abilityUsed" as const, filter: { actor: "self", ability: ab.id }, owner: charId, turn: ctx.state.turn };
-  if (ab.limit?.perTurn !== undefined && countEvents(ctx.state.log, { ...q, scope: "turn" }) >= ab.limit.perTurn) reasons.push("perTurn");
-  if (ab.limit?.perBattle !== undefined && countEvents(ctx.state.log, { ...q, scope: "battle" }) >= ab.limit.perBattle) reasons.push("perBattle");
   const exec = abilityExec(ctx, charId, ab, chosenAlly);
-  exec.pendingUse = true;
+  // 1 ターン上限・戦闘上限は使用回数（abilityUsed）で数える。効果による発動は数えない（§10.2 仮置き）
+  const q = { event: "abilityUsed" as const, filter: { source: "self" as const, ability: ab.id }, owner: charId, turn: ctx.state.turn };
+  if (ab.limit?.perTurn !== undefined && countEvents(ctx.state.log, { ...q, scope: "turn" }) >= evalValue(ctx, exec, ab.limit.perTurn)) reasons.push("perTurn");
+  if (ab.limit?.perBattle !== undefined && countEvents(ctx.state.log, { ...q, scope: "battle" }) >= evalValue(ctx, exec, ab.limit.perBattle)) reasons.push("perBattle");
   if (!canPayCosts(ctx, exec, ab.cost)) reasons.push("cost");
-  if (ab.cond && !evalCondition(ctx, exec, ab.cond)) reasons.push("cond");
-  if (needsChosenAlly(ab.effects) || (ab.cond && needsChosenAlly(ab.cond))) {
+  if (ab.usable && !evalCondition(ctx, exec, ab.usable)) reasons.push("cond");
+  if (needsChosenAlly(ab.effects) || (ab.usable && needsChosenAlly(ab.usable))) {
     if (chosenAlly === undefined || !isActiveMain(ctx, chosenAlly)) reasons.push("chosenAlly");
   }
   return reasons;
@@ -60,14 +64,13 @@ export function useAbility(ctx: Ctx, charId: string, abilityId: string, chosenAl
   const exec = abilityExec(ctx, charId, ab, chosenAlly);
   const startSeq = ctx.state.log.length;
 
-  // 1. コストを支払う（今回の使用を含めて数える）
-  exec.pendingUse = true;
+  // 1. コストを支払う（when は使う前の状態で評価する）
   payCosts(ctx, exec, ab.cost);
-  exec.pendingUse = false;
-  // 2. CT を最大値に戻す
+  // 2. CT を最大値に戻す（効果より前。効果の中で CT を 0 にすると、その結果が残る）
   c.ct[ab.id] = ab.ct;
-  // 3. abilityUsed を記録
+  // 3. abilityUsed と abilityActivated（経路 use）を記録
   emit(ctx, { type: "abilityUsed", sourceKind: "ability", actor: charId, ability: ab.id, color: ab.color });
+  emit(ctx, { type: "abilityActivated", sourceKind: "ability", actor: charId, ability: ab.id, color: ab.color, route: "use" });
   // 4. 効果を順に処理する
   for (const e of ab.effects) {
     runEffect(ctx, exec, e);

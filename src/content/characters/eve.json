@@ -1,26 +1,196 @@
 {
   "id": "eve",
-  "name": "イヴ",
-  "kind": "princess",
+  "name": "神代の始祖イヴ",
+  "kind": "kamihime",
   "element": "thunder",
+  "gaugeMax": 100,
+  "burstConsume": "subtract100",
   "burst": {
-    "description": "未入力（§10.3 に記載なし）",
-    "effects": [{ "type": "damage", "target": "enemy", "category": "burst" }]
+    "effects": [
+      {
+        "type": "damage",
+        "target": "allEnemies",
+        "category": "burst",
+        "element": "thunder",
+        "hits": 1,
+        "note": "特大"
+      },
+      {
+        "type": "activateAbility",
+        "character": "self",
+        "ability": "eve_a1"
+      }
+    ],
+    "name": "破滅の雷+"
   },
+  "tokens": [],
   "abilities": [
     {
-      "id": "eve_ability3",
-      "name": "アビリティ3",
-      "color": "yellow",
-      "ct": 5,
+      "id": "eve_a1",
+      "name": "ラグナロクテンペスト+",
+      "color": "red",
+      "ct": 1,
       "effects": [
-        { "type": "gaugeUp", "target": "allAllies", "amount": 20 },
-        { "type": "addBuff", "target": "allAllies", "buff": "被ダメージ-1000", "slot": "damageCut", "amount": 1000, "duration": { "turns": 1 } },
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability",
+          "hits": {
+            "useCount": {
+              "ability": "self",
+              "scope": "battle",
+              "kind": "activated"
+            },
+            "min": 1,
+            "max": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "eve_a2",
+      "name": "クルーエルディザスター+",
+      "color": "red",
+      "ct": 5,
+      "cost": [
+        {
+          "gauge": 20,
+          "when": {
+            "useCount": {
+              "ability": "self",
+              "scope": "turn",
+              "gte": 1
+            }
+          }
+        }
+      ],
+      "effects": [
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability",
+          "element": "phantom"
+        },
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability",
+          "element": "fire"
+        },
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability",
+          "element": "water"
+        },
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability",
+          "element": "wind"
+        },
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability",
+          "element": "thunder"
+        },
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability",
+          "element": "dark"
+        },
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability",
+          "element": "light"
+        },
+        {
+          "type": "addBuff",
+          "target": "allAllies",
+          "buff": "ダメージ上限UP",
+          "slot": "dmgCapUp",
+          "amount": null,
+          "categories": [
+            "normal",
+            "ability",
+            "burst"
+          ],
+          "stack": {
+            "max": null,
+            "duration": "perStack"
+          },
+          "duration": {
+            "turns": 2
+          }
+        },
+        {
+          "type": "recast",
+          "when": {
+            "useCount": {
+              "ability": "self",
+              "scope": "turn",
+              "lte": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "eve_a3",
+      "name": "グロリスブレシング",
+      "color": "yellow",
+      "ct": 2,
+      "effects": [
+        {
+          "type": "gaugeUp",
+          "target": "allAllies",
+          "amount": 20
+        },
+        {
+          "type": "addBuff",
+          "target": "allAllies",
+          "buff": "被ダメージマイナス",
+          "slot": "damageCut",
+          "amount": 1000,
+          "duration": {
+            "turns": 2
+          }
+        },
         {
           "type": "if",
-          "cond": { "useCount": { "ability": "self", "scope": "battle", "parity": "odd" } },
-          "then": [{ "type": "addBuff", "target": "allAllies", "buff": "バーストダメージUP", "slot": "burstDmgUp", "amount": null, "duration": { "turns": 1 } }],
-          "else": [{ "type": "addStatus", "target": "allAllies", "status": "サステイン", "duration": { "count": 1 } }]
+          "cond": {
+            "useCount": {
+              "ability": "self",
+              "scope": "battle",
+              "parity": "odd",
+              "kind": "activated"
+            }
+          },
+          "then": [
+            {
+              "type": "addBuff",
+              "target": "allAllies",
+              "buff": "バーストダメージプラス",
+              "slot": "burstDmgPlus",
+              "amount": null,
+              "duration": {
+                "turns": 2
+              }
+            }
+          ],
+          "else": [
+            {
+              "type": "addStatus",
+              "target": "allAllies",
+              "status": "サステイン",
+              "duration": {
+                "turns": 2
+              }
+            }
+          ]
         }
       ]
     }
@@ -28,24 +198,86 @@
   "assists": [
     {
       "id": "eve_assist1",
-      "name": "アシスト1",
-      "trigger": { "event": "abilityUsed", "filter": { "color": "red", "element": "thunder" } },
-      "cond": { "count": { "event": "abilityUsed", "filter": { "color": "red", "element": "thunder" }, "scope": "turn", "multipleOf": 5 } },
-      "limit": { "perTurn": 10 },
-      "effects": [{ "type": "changeCT", "target": "self", "abilities": "all", "amount": -1 }]
+      "name": "ミシックプレビレッジ",
+      "trigger": {
+        "event": "abilityUsed",
+        "filter": {
+          "color": "red",
+          "sourceElement": "thunder"
+        }
+      },
+      "cond": {
+        "count": {
+          "event": "abilityUsed",
+          "filter": {
+            "color": "red",
+            "sourceElement": "thunder"
+          },
+          "scope": "turn",
+          "multipleOf": 5
+        }
+      },
+      "limit": {
+        "perTurn": 10
+      },
+      "effects": [
+        {
+          "type": "changeCT",
+          "target": "self",
+          "abilities": "all",
+          "amount": -1
+        }
+      ]
     },
     {
       "id": "eve_assist2",
-      "name": "アシスト2",
-      "trigger": { "event": "abilityUsed", "filter": { "color": "red", "element": "thunder" } },
-      "cond": { "count": { "event": "abilityUsed", "filter": { "color": "red", "element": "thunder" }, "scope": "turn", "gte": 15 } },
+      "name": "サンダーチェインインパクト",
+      "trigger": {
+        "event": "turnEnd"
+      },
       "effects": [
-        { "type": "damage", "target": "enemy", "category": "ability" },
-        { "type": "heal", "target": { "alliesWhere": { "element": "thunder" } } },
-        { "type": "removeDebuff", "target": { "alliesWhere": { "element": "thunder" } }, "count": 1 }
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability",
+          "element": "thunder",
+          "hits": 1
+        },
+        {
+          "type": "if",
+          "cond": {
+            "count": {
+              "event": "abilityUsed",
+              "filter": {
+                "color": "red",
+                "sourceElement": "thunder"
+              },
+              "scope": "turn",
+              "gte": 15
+            }
+          },
+          "then": [
+            {
+              "type": "heal",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              }
+            },
+            {
+              "type": "removeDebuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "count": 1
+            }
+          ]
+        }
       ]
     }
   ],
-  "source": "AGENTS.md §10.3（数値・枠 ID は仮置き）",
-  "notes": "アビ1・2、バーストは §10.3 に定義が無いため未入力。アシスト2のトリガーと発動回数は仮置き（§11）。実データは wiki・実機で確認して埋めること"
+  "source": "クライアント提供の資料と確認（2026-11-11）。効果量 null は未調査"
 }

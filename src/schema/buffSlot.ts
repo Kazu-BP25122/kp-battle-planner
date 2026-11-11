@@ -2,7 +2,8 @@ import { z } from "zod";
 import { Polarity } from "./common";
 
 /**
- * バフ・デバフの枠（§7.2）。src/content/buffSlots.json に登録する。
+ * バフ・デバフの枠（§7.2）。src/content/buffSlots.json の slots に登録する。
+ * unit・stacking・cap はダメージ計算用の参考情報（初期版のエンジンは使わない）。未調査なら null。
  */
 export const BuffSlot = z
   .object({
@@ -10,11 +11,13 @@ export const BuffSlot = z
     name: z.string(),
     polarity: Polarity,
     /** 効果量の単位（% / 固定値 など） */
-    unit: z.enum(["percent", "flat", "none"]),
-    /** ダメージ計算用の参考情報（初期版のエンジンは使わない） */
-    stacking: z.enum(["additive", "multiplicative"]).optional(),
-    /** ダメージ計算用の参考情報：上限 */
-    cap: z.number().optional(),
+    unit: z.string().nullable().optional(),
+    /** 合算方法（加算か乗算か） */
+    stacking: z.string().nullable().optional(),
+    /** 上限 */
+    cap: z.number().nullable().optional(),
+    /** 確定状況（「仮置き」など） */
+    status: z.string().optional(),
     /**
      * デバフの合計下限のグループ（§7.2）。同じグループのデバフ量の合計が floor に達したら「効果なし」を表示する
      */
@@ -26,9 +29,7 @@ export const BuffSlot = z
      * - turnEndGauge: ターン終了時のゲージ上昇（奮励など。効果量 = 上昇量。§5-5-3）
      */
     engineEffect: z.enum(["gaugeRate", "turnEndGauge"]).optional(),
-    /** 仕様で確定していない枠（提供情報に無いもの）なら true */
-    provisional: z.boolean().optional(),
-    notes: z.string().optional(),
+    note: z.string().optional(),
   })
   .strict()
   .refine((s) => (s.floor === undefined) === (s.floorGroup === undefined), {
@@ -43,3 +44,12 @@ export const BuffSlotList = z.array(BuffSlot).superRefine((list, ctx) => {
     ids.add(s.id);
   }
 });
+
+/** buffSlots.json のファイル全体 */
+export const BuffSlotFile = z
+  .object({
+    note: z.string().optional(),
+    slots: BuffSlotList,
+  })
+  .strict();
+export type BuffSlotFile = z.infer<typeof BuffSlotFile>;

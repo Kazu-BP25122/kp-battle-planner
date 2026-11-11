@@ -1,23 +1,311 @@
-[
-  { "id": "atkUp", "name": "攻撃力UP", "polarity": "buff", "unit": "percent", "notes": "通常攻刃・アビリティ攻撃力 UP など（§7.2）" },
-  { "id": "elemAtkUp", "name": "属性攻撃UP（神姫）", "polarity": "buff", "unit": "percent", "notes": "神姫のアビ由来。幻獣由来とは別枠（§7.2）" },
-  { "id": "elemAtkUpEidolon", "name": "属性攻撃UP（幻獣）", "polarity": "buff", "unit": "percent", "notes": "幻獣由来（§7.2）" },
-  { "id": "vigor", "name": "旺盛", "polarity": "buff", "unit": "percent", "cap": 200, "notes": "HP 50% 以上で攻撃 UP。武器単体上限 100%、武器 + アビ合計上限 200%（§7.2）" },
-  { "id": "rebel", "name": "反逆", "polarity": "buff", "unit": "percent", "cap": 200, "notes": "HP が減るほど攻撃 UP。武器単体上限 150%、武器 + アビ合計上限 200%（§7.2）" },
-  { "id": "specialAtkUp", "name": "特殊攻撃UP", "polarity": "buff", "unit": "percent" },
-  { "id": "normalDmgUp", "name": "通常攻撃ダメージUP / 攻防ダメージUP", "polarity": "buff", "unit": "percent", "cap": 300, "notes": "ランページ・スレイヤーなど（§7.2）" },
-  { "id": "dmgDealtUp", "name": "与ダメージUP", "polarity": "buff", "unit": "percent", "notes": "白虎の召喚効果、アクセのタイムピースなど。被ダメ UP デバフや恐傷とも合算（§7.2）" },
-  { "id": "crit", "name": "クリティカル / 会心", "polarity": "buff", "unit": "percent", "stacking": "multiplicative" },
-  { "id": "damageCut", "name": "被ダメージ軽減（固定値）", "polarity": "buff", "unit": "flat", "provisional": true, "notes": "§10.3 イヴの記述例の枠 ID（仮置き）" },
-  { "id": "burstDmgUp", "name": "バーストダメージUP", "polarity": "buff", "unit": "percent", "provisional": true, "notes": "§10.3 イヴの記述例の枠 ID（仮置き）" },
-  { "id": "gaugeRateUp", "name": "バーストゲージ上昇量UP", "polarity": "buff", "unit": "percent", "engineEffect": "gaugeRate", "provisional": true, "notes": "§8.3 上昇量アップ。攻撃系以外の枠一覧は未確定（§11）" },
-  { "id": "turnEndGauge", "name": "ターン終了時ゲージ上昇（奮励・鼓舞など）", "polarity": "buff", "unit": "flat", "engineEffect": "turnEndGauge", "provisional": true, "notes": "§5-5-3。効果量 = ターン終了時の上昇量。枠の分け方は未確定（§11）" },
-
-  { "id": "atkDownA", "name": "攻撃力ダウン（A 枠）", "polarity": "debuff", "unit": "percent", "floorGroup": "atkDown", "floor": 50 },
-  { "id": "atkDownB", "name": "攻撃力ダウン（B 枠）", "polarity": "debuff", "unit": "percent", "floorGroup": "atkDown", "floor": 50 },
-  { "id": "atkDownC", "name": "攻撃力ダウン（C 枠・幻獣）", "polarity": "debuff", "unit": "percent", "floorGroup": "atkDown", "floor": 50 },
-  { "id": "defDownA", "name": "防御力ダウン（A 枠）", "polarity": "debuff", "unit": "percent", "floorGroup": "defDown", "floor": 50 },
-  { "id": "defDownB", "name": "防御力ダウン（B 枠）", "polarity": "debuff", "unit": "percent", "floorGroup": "defDown", "floor": 50 },
-  { "id": "defDownC", "name": "防御力ダウン（C 枠・幻獣）", "polarity": "debuff", "unit": "percent", "floorGroup": "defDown", "floor": 50 },
-  { "id": "elemResDown", "name": "属性耐性ダウン", "polarity": "debuff", "unit": "percent", "notes": "防御力ダウンとは完全に別枠（§7.2）" }
-]
+{
+  "note": "バフ・デバフの枠の一覧（AGENTS.md §7.2）。キャラ定義の slot はここにある ID を使う。新しい枠を使うときはここに追加する。unit・合算方法・上限は未調査（null）。枠の分け方は仮置きで、有志の検証資料と照合して見直す。",
+  "slots": [
+    {
+      "id": "dmgCapUp",
+      "name": "ダメージ上限UP",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "damageCut",
+      "name": "被ダメージマイナス（固定値）",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "damageCutRate",
+      "name": "被ダメージカット（%）",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "burstDmgPlus",
+      "name": "バーストダメージプラス",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "weakpointRateUp",
+      "name": "急所攻撃確率UP",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "regen",
+      "name": "リジェネ",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "healCapUp",
+      "name": "被回復上限UP",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "critical",
+      "name": "会心",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "vigor",
+      "name": "旺盛",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "ailmentResUp",
+      "name": "異常耐性UP",
+      "polarity": "buff",
+      "unit": "%",
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "allAtkPerfUp",
+      "name": "全攻撃性能UP",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "allDmgPlus",
+      "name": "全攻撃ダメージプラス",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "specialAtkUp",
+      "name": "特殊攻撃UP",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "defDouble",
+      "name": "防御2倍",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "advElementResUp",
+      "name": "有利属性耐性UP",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "beethoven_atkUp",
+      "name": "攻撃UP（ベートーヴェン）",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "beethoven_defUp",
+      "name": "防御UP（ベートーヴェン）",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "beethoven_atkDown",
+      "name": "攻撃DOWN（ベートーヴェン専用）",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "beethoven_defDown",
+      "name": "防御DOWN（ベートーヴェン専用）",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "dmgDealtDown",
+      "name": "与ダメージDOWN",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "normalResDown",
+      "name": "通常攻撃耐性DOWN",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "burstResDown",
+      "name": "バースト耐性DOWN",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "elementAtkUp",
+      "name": "属性攻撃UP（神姫のアビ由来）",
+      "polarity": "buff",
+      "unit": "%",
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "amon_atkDown",
+      "name": "攻撃DOWN（アモン専用）",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "amon_defDown",
+      "name": "防御DOWN（アモン専用）",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "ailmentRateUp",
+      "name": "状態異常付与率UP",
+      "polarity": "buff",
+      "unit": "%",
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "abilityPerfUp",
+      "name": "アビリティ性能UP（ダメージ）",
+      "polarity": "buff",
+      "unit": "%",
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "abilityDmgPlus",
+      "name": "アビリティダメージプラス",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "waterResUp",
+      "name": "水属性耐性UP",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "atkUp",
+      "name": "攻撃UP",
+      "polarity": "buff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "artemis_waterAtkDown",
+      "name": "水属性攻撃DOWN（アルテミス専用）",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "artemis_dmgDealtDown",
+      "name": "与ダメージDOWN（アルテミス専用）",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "artemis_fear",
+      "name": "恐傷（アルテミス専用）",
+      "polarity": "debuff",
+      "unit": null,
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    },
+    {
+      "id": "abilityPerfCapUp",
+      "name": "アビリティ性能UP（上限）",
+      "polarity": "buff",
+      "unit": "%",
+      "stacking": null,
+      "cap": null,
+      "status": "仮置き"
+    }
+  ]
+}

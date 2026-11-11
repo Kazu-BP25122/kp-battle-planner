@@ -42,10 +42,16 @@ export interface BuffInstance {
   /** buff = 枠を持つバフ・デバフ、status = 効果量を持たない状態効果（addStatus） */
   kind: "buff" | "status";
   slot: string | null;
+  /** 1 段分の効果量 */
   amount: number | null;
   polarity: Polarity;
   duration: BuffDuration;
-  removable: boolean;
+  /** 持続が不明（turns: null）。永続として扱う */
+  durationUnknown?: boolean;
+  /** 消去不可（§10.2 undispellable）。解除効果で消えず、サブに下がっても残る */
+  undispellable: boolean;
+  /** 累積型（§7.1）。1 段ごとに 1 つの BuffInstance を持つ */
+  stack?: { max: number | null | "unknown"; duration: "perStack" | "refresh" | "unknown" };
   /** gaugeGainBlocked の止める手段（§8.3） */
   blockSources?: GaugeBlockSource[];
   appliedTurn: number;
@@ -79,27 +85,36 @@ export interface BattleEvent {
   phase: Phase;
   type: EventType;
   sourceKind: SourceKind;
-  /** 発生源キャラ */
+  /** 発生源キャラ。トークンのイベントはトークンの持ち主 */
   actor: string | null;
-  element: Element | null;
+  /** 発生源キャラの属性（§4.7。すべてのイベントが持つ） */
+  sourceElement: Element | null;
+  /** ダメージの属性（damage のみ。§10.2） */
+  element?: Element;
   category?: Category;
   color?: Color;
   ability?: string;
   assist?: string;
+  /** abilityActivated の経路 */
+  route?: "use" | "effect";
   /** 対象キャラ ID、または "enemy" */
   target?: string;
   /** 通常攻撃の連撃数 */
   combo?: number;
-  /** 通常攻撃・バーストの発生元 */
+  /** 通常攻撃・バーストの発生元（§4.7 burst の source） */
   origin?: "attackPhase" | "ability";
   /** バーストで消費したゲージ量 */
   gaugeConsumed?: number;
-  /** ゲージの増減量 */
+  /** ゲージ・トークンの増減量 */
   amount?: number;
   means?: GaugeMeans;
+  /** トークン名 */
+  token?: string;
   slot?: string | null;
   buff?: string;
   polarity?: Polarity;
+  /** 累積型の累積数（付与後・期限切れ後） */
+  stacks?: number;
   /** 被弾回数 */
   count?: number;
   /** バフの持続（付与・上書き時は付与した持続、消費時は残り回数）。ガントチャート用 */
@@ -107,7 +122,8 @@ export interface BattleEvent {
   remaining?: number;
   /** 付与元の表示名 */
   label?: string;
-  route?: "replenish" | "swap";
+  /** enterBattle の経路 */
+  via?: "replenish" | "swap";
   /** 処理した操作の番号（チャート上の位置） */
   opIndex: number;
 }
@@ -124,7 +140,12 @@ export type WarningCode =
   | "comboRateMissing"
   | "stepLimit"
   | "customMissing"
-  | "dataError";
+  | "dataError"
+  | "tokenOverflow"
+  | "stackMax"
+  | "stackDurationUnknown"
+  | "durationUnknown"
+  | "burstUnset";
 
 export interface Warning {
   code: WarningCode;
@@ -172,6 +193,8 @@ export interface BattleState {
   nextUid: number;
   /** 今ターンの攻撃フェーズを実行済みか */
   attacked: boolean;
+  /** 一度だけ出す警告のキー */
+  warnedOnce: string[];
 }
 
 export interface EngineInput {

@@ -8,6 +8,8 @@ import { evalCondition } from "./conditions";
 import { matchesFilter, countEvents } from "./query";
 import { runEffects } from "./effects";
 import { loseGauge } from "./gauge";
+import { consumeToken } from "./tokens";
+import { evalValue } from "./values";
 import type { BattleEvent, OwnedAssist } from "./types";
 
 /** アシストが今有効か（§4.4 activeIn） */
@@ -22,36 +24,53 @@ function isAssistActive(ctx: Ctx, oa: OwnedAssist): boolean {
   return activeIn === "sub" || activeIn === "both";
 }
 
+/** when を満たすコストだけを取り出す（使う前の状態で評価する。§6 コスト） */
+function activeCosts(ctx: Ctx, exec: Exec, costs: readonly Cost[] | undefined): Cost[] {
+  return (costs ?? []).filter((cost) => !cost.when || evalCondition(ctx, exec, cost.when));
+}
+
 export function canPayCosts(ctx: Ctx, exec: Exec, costs: readonly Cost[] | undefined): boolean {
-  for (const cost of costs ?? []) {
-    if (cost.cond && !evalCondition(ctx, exec, cost.cond)) continue;
-    const c = ctx.state.chars[exec.self];
-    if (!c) return false;
-    if (cost.type === "gauge" && c.gauge < cost.amount) return false;
-    if (cost.type === "token" && (c.tokens[cost.token] ?? 0) < cost.amount) return false;
+  const c = ctx.state.chars[exec.self];
+  const list = activeCosts(ctx, exec, costs);
+  if (list.length === 0) return true;
+  if (!c) return false;
+  let gauge = 0;
+  let hp = 0;
+  const tokens = new Map<string, number>();
+  for (const cost of list) {
+    if ("gauge" in cost) gauge += cost.gauge;
+    else if ("token" in cost) tokens.set(cost.token.name, (tokens.get(cost.token.name) ?? 0) + cost.token.amount);
+    else hp += cost.hpRate;
   }
+  if (c.gauge < gauge) return false;
+  for (const [name, n] of tokens) if ((c.tokens[name] ?? 0) < n) return false;
+  // TODO(spec): HP 割合のコストを払える条件（HP が 0 にならないか）は未定義。残りがコスト以上あれば払えるとする
+  if (hp > 0 && c.hp < hp) return false;
   return true;
 }
 
 export function payCosts(ctx: Ctx, exec: Exec, costs: readonly Cost[] | undefined): void {
-  for (const cost of costs ?? []) {
-    if (cost.cond && !evalCondition(ctx, exec, cost.cond)) continue;
-    const c = ctx.state.chars[exec.self]!;
-    if (cost.type === "gauge") loseGauge(ctx, exec, exec.self, cost.amount, "cost");
-    else c.tokens[cost.token] = (c.tokens[cost.token] ?? 0) - cost.amount;
+  const c = ctx.state.chars[exec.self];
+  if (!c) return;
+  // when はすべて支払う前に評価する
+  for (const cost of activeCosts(ctx, exec, costs)) {
+    if ("gauge" in cost) loseGauge(ctx, exec, exec.self, cost.gauge, "cost");
+    else if ("token" in cost) consumeToken(ctx, exec, exec.self, { name: cost.token.name }, cost.token.amount);
+    else c.hp = Math.max(0, c.hp - cost.hpRate);
   }
 }
 
-function assistExec(ctx: Ctx, oa: OwnedAssist, ev: BattleEvent): Exec {
+function assistExec(ctx: Ctx, oa: OwnedAssist, ev: BattleEvent, timingStart: number): Exec {
   const d = ctx.input.characters[oa.owner]!;
   return {
     self: oa.owner,
     sourceKind: "assist",
     assist: oa.assist.id,
-    // TODO(spec): §11 アシストが与えるダメージの攻撃区分の既定値は未確定。category の指定が無ければ ability とする
+    // TODO(spec): §11 アシストが与えるダメージの攻撃区分の既定値は未確定（damage は category 必須なので使わない）
     defaultCategory: "ability",
     label: `${d.name} ${oa.assist.name ?? oa.assist.id}${oa.user ? "（ユーザー補正）" : ""}`,
-    seqLimit: ev.seq,
+    window: { upTo: ev.seq, from: timingStart },
+    triggerEvent: ev,
     dealtDamage: false,
   };
 }
@@ -59,17 +78,18 @@ function assistExec(ctx: Ctx, oa: OwnedAssist, ev: BattleEvent): Exec {
 function limitReached(ctx: Ctx, oa: OwnedAssist): boolean {
   const lim = oa.assist.limit;
   if (!lim) return false;
-  const q = { event: "assistTriggered" as const, filter: { actor: "self", assist: oa.assist.id }, owner: oa.owner, turn: ctx.state.turn };
-  if (lim.perTurn !== undefined && countEvents(ctx.state.log, { ...q, scope: "turn" }) >= lim.perTurn) return true;
-  if (lim.perBattle !== undefined && countEvents(ctx.state.log, { ...q, scope: "battle" }) >= lim.perBattle) return true;
+  const q = { event: "assistTriggered" as const, filter: { source: "self" as const, assist: oa.assist.id }, owner: oa.owner, turn: ctx.state.turn };
+  const exec = assistExec(ctx, oa, ctx.state.log[ctx.state.log.length - 1]!, ctx.state.log.length);
+  if (lim.perTurn !== undefined && countEvents(ctx.state.log, { ...q, scope: "turn" }) >= evalValue(ctx, exec, lim.perTurn)) return true;
+  if (lim.perBattle !== undefined && countEvents(ctx.state.log, { ...q, scope: "battle" }) >= evalValue(ctx, exec, lim.perBattle)) return true;
   return false;
 }
 
-function matches(ctx: Ctx, oa: OwnedAssist, ev: BattleEvent): boolean {
+function matches(ctx: Ctx, oa: OwnedAssist, ev: BattleEvent, timingStart: number): boolean {
   if (!isAssistActive(ctx, oa)) return false;
   if (!matchesFilter(ev, oa.assist.trigger.filter, oa.owner)) return false;
   if (limitReached(ctx, oa)) return false;
-  const exec = assistExec(ctx, oa, ev);
+  const exec = assistExec(ctx, oa, ev, timingStart);
   if (oa.assist.cond && !evalCondition(ctx, exec, oa.assist.cond)) return false;
   if (!canPayCosts(ctx, exec, oa.assist.cost)) return false;
   return true;
@@ -86,12 +106,12 @@ function orderedCandidates(ctx: Ctx, ev: BattleEvent): OwnedAssist[] {
     .map((x) => x.oa);
 }
 
-function fire(ctx: Ctx, oa: OwnedAssist, ev: BattleEvent): void {
+function fire(ctx: Ctx, oa: OwnedAssist, ev: BattleEvent, timingStart: number): void {
   step(ctx);
-  const exec = assistExec(ctx, oa, ev);
-  emit(ctx, { type: "assistTriggered", sourceKind: "assist", actor: oa.owner, assist: oa.assist.id });
-  // アシストの効果の中の条件は、効果を処理する瞬間の状態で見る（回数は発動したイベント時点まで）
+  const exec = assistExec(ctx, oa, ev, timingStart);
   payCosts(ctx, exec, oa.assist.cost);
+  // assistTriggered は効果を処理する前に記録する（効果の中で数える自分の発動回数は今回を含む。§4.7）
+  emit(ctx, { type: "assistTriggered", sourceKind: "assist", actor: oa.owner, assist: oa.assist.id });
   const queueMark = ctx.queue.length;
   runEffects(ctx, exec, oa.assist.effects);
   if (ctx.input.settings.assistEventOrder === "interrupt") {
@@ -109,6 +129,8 @@ export function processEvent(ctx: Ctx, ev: BattleEvent): void {
   step(ctx);
   const candidates = orderedCandidates(ctx, ev);
   if (candidates.length === 0) return;
+  // このタイミングの処理を始めた位置。これ以降に記録されたイベントは回数の条件に数える（Exec.window）
+  const timingStart = ctx.state.log.length;
   // 1 つのアシストは 1 つのタイミングで最大 1 回まで
   const fired = new Set<OwnedAssist>();
   if (ctx.input.settings.assistReentry) {
@@ -117,9 +139,9 @@ export function processEvent(ctx: Ctx, ev: BattleEvent): void {
       progressed = false;
       for (const oa of orderedCandidates(ctx, ev)) {
         if (fired.has(oa)) continue;
-        if (matches(ctx, oa, ev)) {
+        if (matches(ctx, oa, ev, timingStart)) {
           fired.add(oa);
-          fire(ctx, oa, ev);
+          fire(ctx, oa, ev, timingStart);
           progressed = true;
           break;
         }
@@ -127,7 +149,7 @@ export function processEvent(ctx: Ctx, ev: BattleEvent): void {
     }
   } else {
     for (const oa of candidates) {
-      if (matches(ctx, oa, ev)) fire(ctx, oa, ev);
+      if (matches(ctx, oa, ev, timingStart)) fire(ctx, oa, ev, timingStart);
     }
   }
 }

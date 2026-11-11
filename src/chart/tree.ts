@@ -27,6 +27,15 @@ export function newChart(party: Party = EMPTY_PARTY): ChartData {
   };
 }
 
+/**
+ * プレイのリセット：操作の記録（全ブランチ）を消して、戦闘開始の状態に戻す。
+ * 編成・クエスト・ユーザー補正・設定は残す。履歴（§14.3）に積むので Undo で元に戻せる。
+ */
+export function resetPlay(chart: ChartData): ChartData {
+  const branch: Branch = { id: newId(), name: MAIN_BRANCH_NAME, tip: null };
+  return { ...chart, nodes: [], branches: [branch], currentBranch: branch.id };
+}
+
 export function nodeMap(chart: ChartData): Map<string, ChartNode> {
   return new Map(chart.nodes.map((n) => [n.id, n]));
 }

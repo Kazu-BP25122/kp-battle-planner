@@ -4,7 +4,7 @@ import type { Character } from "../schema/character";
 import type { ChartData, Op } from "../schema/chart";
 import type { Catalog } from "../chart/input";
 import { initHistory, pushHistory, redo, undo, type History } from "../chart/history";
-import { currentBranch, newChart, recordOp, type Cursor } from "../chart/tree";
+import { currentBranch, newChart, recordOp, resetPlay, type Cursor } from "../chart/tree";
 import { loadFromStorage, saveToStorage } from "../chart/storage";
 import { useChartModel } from "./model";
 import { opLabel } from "./labels";
@@ -128,6 +128,16 @@ export default function App({ characters, buffSlots }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [doUndo, doRedo]);
 
+  const doReset = useCallback(() => {
+    const { chart: c } = historyRef.current.present;
+    const n = c.branches.length;
+    const msg = `操作の記録${n > 1 ? `（${n} 本のブランチすべて）` : ""}を消して、戦闘開始に戻す？
+編成・クエスト・ユーザー補正・設定は残る。「戻す」（Ctrl+Z）で取り消せる。`;
+    if (!window.confirm(msg)) return;
+    commit({ chart: resetPlay(c), cursor: null }, "プレイのリセット");
+    setToast("プレイをリセットした（「戻す」で取り消せる）");
+  }, [commit]);
+
   const jumpTo = useCallback(
     (c: Cursor) => {
       setCursor(c);
@@ -158,7 +168,7 @@ export default function App({ characters, buffSlots }: Props) {
       </header>
       <BranchBar chart={chart} cursor={cursor} model={model} commit={commit} />
       <main>
-        {tab === "play" && <PlayScreen catalog={catalog} chart={chart} model={model} record={record} setCursor={setCursor} openChart={() => setTab("chart")} />}
+        {tab === "play" && <PlayScreen catalog={catalog} chart={chart} model={model} record={record} setCursor={setCursor} openChart={() => setTab("chart")} onReset={doReset} />}
         {tab === "chart" && <ChartView catalog={catalog} chart={chart} model={model} jumpTo={jumpTo} commit={commit} cursor={cursor} notify={setToast} />}
         {tab === "gantt" && <GanttView catalog={catalog} chart={chart} model={model} jumpTo={jumpTo} />}
         {tab === "setup" && <SetupView catalog={catalog} chart={chart} cursor={cursor} commit={commit} />}

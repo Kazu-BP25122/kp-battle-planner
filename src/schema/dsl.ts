@@ -1,6 +1,6 @@
 /**
- * 効果記述 DSL（§10）の Zod スキーマ。
- * 部品を追加したら、ここ・engine の registry・AGENTS.md §10.1 を同時に更新すること。
+ * 効果記述 DSL（§10）の Zod スキーマ。部品の項目は DSL_PARTS.md に合わせる。
+ * 部品を追加したら、ここ・engine の registry・AGENTS.md §10・DSL_PARTS.md を同時に更新すること。
  * データにコードを書かせない（§3-4）。custom も ID で参照するだけ。
  */
 import { z } from "zod";
@@ -18,6 +18,10 @@ import {
 } from "./common";
 
 const oneOrMany = <T extends z.ZodType>(s: T) => z.union([s, z.array(s)]);
+type OneOrMany<T> = T | T[];
+const note = z.string().optional();
+const Scope = z.enum(["turn", "battle"]);
+type Scope = z.infer<typeof Scope>;
 
 // ---------------------------------------------------------------- 対象（target）
 
@@ -25,134 +29,172 @@ export const AlliesWhere = z
   .object({
     element: oneOrMany(Element).optional(),
     position: oneOrMany(Position).optional(),
-    /** true なら自分を除く */
+    /** 自分を除く（「自分以外の味方全体」） */
     excludeSelf: z.boolean().optional(),
+    /** サブも含める（「サブメンバー含む」）。なければメインだけ */
+    includeSub: z.boolean().optional(),
   })
   .strict();
 export type AlliesWhere = z.infer<typeof AlliesWhere>;
 
-export const Target = z.union([
-  z.enum(["self", "allAllies", "chosenAlly", "enemy"]),
-  z.object({ alliesWhere: AlliesWhere }).strict(),
-]);
+export const TARGET_NAMES = ["self", "allAllies", "chosenAlly", "enemy", "allEnemies", "randomEnemy"] as const;
+export const Target = z.union([z.enum(TARGET_NAMES), z.object({ alliesWhere: AlliesWhere }).strict()]);
 export type Target = z.infer<typeof Target>;
 
-/** 攻撃するキャラの指定（performAttack.attacker）。敵・chosenAlly 以外の対象と同じ書き方 */
+/** 攻撃するキャラの指定（performAttack.attacker）。味方の対象と同じ書き方 */
 export const AttackerTarget = z.union([
   z.enum(["self", "allAllies", "chosenAlly"]),
   z.object({ alliesWhere: AlliesWhere }).strict(),
 ]);
 
-// ---------------------------------------------------------------- イベントの絞り込み
+/** 敵の対象（damage.target）。初期版は敵 1 体として扱う（§10.2） */
+export const EnemyTarget = z.enum(["enemy", "allEnemies", "randomEnemy"]);
+
+// ---------------------------------------------------------------- イベントの絞り込み（§4.7、DSL_PARTS.md §8）
 
 export const EventFilter = z
   .object({
-    /** 発生源キャラ。"self" はアシスト・アビの持ち主、"other" は持ち主以外、それ以外はキャラ ID */
-    actor: z.string().optional(),
+    ability: z.string().optional(),
+    color: oneOrMany(Color).optional(),
+    /** イベントを起こしたキャラの属性 */
+    sourceElement: oneOrMany(Element).optional(),
+    /** ダメージの属性（damage のみ） */
     element: oneOrMany(Element).optional(),
     category: oneOrMany(Category).optional(),
-    color: oneOrMany(Color).optional(),
-    sourceKind: oneOrMany(SourceKind).optional(),
-    ability: z.string().optional(),
+    /** 持ち主から見て、発生源キャラが自分か自分以外か */
+    source: z.enum(["self", "others"]).optional(),
+    /** 発動の経路（abilityActivated のみ） */
+    route: z.enum(["use", "effect"]).optional(),
+    /** トークン名（tokenAdded・tokenConsumed のみ） */
+    token: z.string().optional(),
+    /** アシスト ID（assistTriggered のみ） */
     assist: z.string().optional(),
+    // 以下は §4.7「filter は上表のどの項目でも絞り込める」による追加の項目（DSL_PARTS.md §8 に記載）
+    sourceKind: oneOrMany(SourceKind).optional(),
     slot: z.string().optional(),
+    buff: z.string().optional(),
     polarity: Polarity.optional(),
     means: oneOrMany(GaugeMeans).optional(),
-    /** 対象キャラ（gaugeChanged・buffApplied など）。"self" / キャラ ID / "enemy" */
+    /** 対象キャラ（gaugeChanged・buff* など）。"self" は持ち主 */
     target: z.string().optional(),
+    /** 通常攻撃・バーストの発生元 */
     origin: z.enum(["attackPhase", "ability"]).optional(),
-    route: z.enum(["replenish", "swap"]).optional(),
+    /** 登場の経路（enterBattle のみ） */
+    via: z.enum(["replenish", "swap"]).optional(),
   })
   .strict();
 export type EventFilter = z.infer<typeof EventFilter>;
 
-// ---------------------------------------------------------------- 条件（cond）
+// ---------------------------------------------------------------- 数値の部品（§10.2、DSL_PARTS.md §6）
 
-const CountCond = z
-  .object({
-    event: EventType,
-    filter: EventFilter.optional(),
-    scope: z.enum(["turn", "battle"]),
-  })
-  .extend(NumCompare.shape)
+const Calc = {
+  mul: z.number().optional(),
+  add: z.number().optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+};
+type Calc = { mul?: number; add?: number; min?: number; max?: number };
+
+const UseCountRef = z
+  .object({ ability: z.string(), scope: Scope, kind: z.enum(["used", "activated"]).optional() })
   .strict();
-
-const UseCountCond = z
-  .object({
-    /** "self" はこのアビリティ自身 */
-    ability: z.string(),
-    scope: z.enum(["turn", "battle"]),
-  })
-  .extend(NumCompare.shape)
+const CountRef = z
+  .object({ event: EventType, filter: EventFilter.optional(), scope: Scope, sum: z.literal("amount").optional() })
   .strict();
+const TokenSubject = z.enum(["self", "chosenAlly"]);
+const TokenRef = z
+  .object({ name: z.string().optional(), group: z.string().optional(), target: TokenSubject.optional() })
+  .strict()
+  .refine((t) => (t.name === undefined) !== (t.group === undefined), { message: "token は name か group のどちらか一方を書く" });
 
-const SubjectRef = z.enum(["self", "chosenAlly"]);
+export type UseCountRef = z.infer<typeof UseCountRef>;
+export type CountRef = z.infer<typeof CountRef>;
+export type TokenRef = z.infer<typeof TokenRef>;
+
+export type ValuePart = ({ useCount: UseCountRef } | { count: CountRef } | { token: TokenRef }) & Calc;
+export const ValuePart: z.ZodType<ValuePart> = z.union([
+  z.object({ useCount: UseCountRef, ...Calc }).strict(),
+  z.object({ count: CountRef, ...Calc }).strict(),
+  z.object({ token: TokenRef, ...Calc }).strict(),
+]);
+/** 数、または数値の部品 */
+export const NumOrValue = z.union([z.number(), ValuePart]);
+export type NumOrValue = number | ValuePart;
+
+// ---------------------------------------------------------------- 条件（cond。DSL_PARTS.md §4）
+
+const Subject = z.enum(["self", "chosenAlly", "enemy"]);
+type Subject = z.infer<typeof Subject>;
+const AllySubject = z.enum(["self", "chosenAlly"]);
+type AllySubject = z.infer<typeof AllySubject>;
 
 export type Condition =
-  | { count: z.infer<typeof CountCond> }
-  | { useCount: z.infer<typeof UseCountCond> }
-  | { token: { name: string; target?: "self" | "chosenAlly" } & NumCompare }
-  | { hpRate: { target?: "self" | "chosenAlly" } & NumCompare }
-  | { gauge: { target?: "self" | "chosenAlly" } & NumCompare }
-  | { hasBuff: { target?: "self" | "chosenAlly" | "enemy"; slot?: string; buff?: string } }
-  | { hasDebuff: { target?: "self" | "chosenAlly" | "enemy"; slot?: string; buff?: string } }
+  | { count: CountRef & NumCompare }
+  | { useCount: UseCountRef & NumCompare }
+  | { token: TokenRef & NumCompare }
+  | { hpRate: { target?: AllySubject } & NumCompare }
+  | { gauge: { target?: AllySubject } & NumCompare }
+  | { hasBuff: { target?: Subject; buff?: string; slot?: string; stacks?: NumCompare } }
+  | { hasDebuff: { target?: Subject; buff?: string; slot?: string; stacks?: NumCompare } }
+  | { hasStatus: { target?: Subject; status: string } }
   | { turnCount: NumCompare }
-  | { element: { of?: "self" | "chosenAlly" | "enemy"; is: z.infer<typeof Element> | z.infer<typeof Element>[] } }
-  | { position: { target?: "self" | "chosenAlly"; is: z.infer<typeof Position> | z.infer<typeof Position>[] } }
+  | { element: { target?: Subject; is: OneOrMany<z.infer<typeof Element>> } }
+  | { position: { target?: AllySubject; is: OneOrMany<z.infer<typeof Position>> } }
+  | { trigger: EventFilter }
+  | { partyAll: { element?: OneOrMany<z.infer<typeof Element>> } }
+  | { option: { id: string; is: boolean | string | number } }
   | { and: Condition[] }
   | { or: Condition[] }
   | { not: Condition };
 
+const HasBuffSpec = z
+  .object({ target: Subject.optional(), buff: z.string().optional(), slot: z.string().optional(), stacks: NumCompare.optional() })
+  .strict();
+
 export const Condition: z.ZodType<Condition> = z.lazy(() =>
   z.union([
-    z.object({ count: CountCond }).strict(),
-    z.object({ useCount: UseCountCond }).strict(),
+    z.object({ count: CountRef.extend(NumCompare.shape).strict() }).strict(),
+    z.object({ useCount: UseCountRef.extend(NumCompare.shape).strict() }).strict(),
     z
       .object({
-        token: z.object({ name: z.string(), target: SubjectRef.optional() }).extend(NumCompare.shape).strict(),
+        token: z
+          .object({ name: z.string().optional(), group: z.string().optional(), target: TokenSubject.optional() })
+          .extend(NumCompare.shape)
+          .strict()
+          .refine((t) => (t.name === undefined) !== (t.group === undefined), { message: "token は name か group のどちらか一方を書く" }),
       })
       .strict(),
-    z.object({ hpRate: z.object({ target: SubjectRef.optional() }).extend(NumCompare.shape).strict() }).strict(),
-    // TODO(spec): §10.1 の条件一覧に gauge は無いが、§4.7・§6.1-3 で「ゲージ 100 以上なら」の例があるため追加。AGENTS.md への追記を確認中
-    z.object({ gauge: z.object({ target: SubjectRef.optional() }).extend(NumCompare.shape).strict() }).strict(),
-    z
-      .object({
-        hasBuff: z
-          .object({ target: z.enum(["self", "chosenAlly", "enemy"]).optional(), slot: z.string().optional(), buff: z.string().optional() })
-          .strict(),
-      })
-      .strict(),
-    z
-      .object({
-        hasDebuff: z
-          .object({ target: z.enum(["self", "chosenAlly", "enemy"]).optional(), slot: z.string().optional(), buff: z.string().optional() })
-          .strict(),
-      })
-      .strict(),
+    z.object({ hpRate: z.object({ target: AllySubject.optional() }).extend(NumCompare.shape).strict() }).strict(),
+    z.object({ gauge: z.object({ target: AllySubject.optional() }).extend(NumCompare.shape).strict() }).strict(),
+    z.object({ hasBuff: HasBuffSpec }).strict(),
+    z.object({ hasDebuff: HasBuffSpec }).strict(),
+    z.object({ hasStatus: z.object({ target: Subject.optional(), status: z.string() }).strict() }).strict(),
     z.object({ turnCount: NumCompare }).strict(),
-    z
-      .object({
-        element: z
-          .object({ of: z.enum(["self", "chosenAlly", "enemy"]).optional(), is: oneOrMany(Element) })
-          .strict(),
-      })
-      .strict(),
-    z.object({ position: z.object({ target: SubjectRef.optional(), is: oneOrMany(Position) }).strict() }).strict(),
+    z.object({ element: z.object({ target: Subject.optional(), is: oneOrMany(Element) }).strict() }).strict(),
+    z.object({ position: z.object({ target: AllySubject.optional(), is: oneOrMany(Position) }).strict() }).strict(),
+    z.object({ trigger: EventFilter }).strict(),
+    z.object({ partyAll: z.object({ element: oneOrMany(Element).optional() }).strict() }).strict(),
+    z.object({ option: z.object({ id: z.string(), is: z.union([z.boolean(), z.string(), z.number()]) }).strict() }).strict(),
     z.object({ and: z.array(Condition) }).strict(),
     z.object({ or: z.array(Condition) }).strict(),
     z.object({ not: Condition }).strict(),
   ]),
 );
 
-// ---------------------------------------------------------------- 持続
+// ---------------------------------------------------------------- 持続・累積（DSL_PARTS.md §7）
 
-export const Duration = z.union([
-  z.object({ turns: z.number().int().positive() }).strict(),
+export type Duration =
+  | { turns: number | ValuePart | null }
+  | { count: number; consumeOn?: "attack" | "damaged" }
+  | { permanent: true };
+export const Duration: z.ZodType<Duration> = z.union([
+  /** turns: null は不明 */
+  z.object({ turns: z.union([z.number().int().positive(), ValuePart, z.null()]) }).strict(),
   z
     .object({
       count: z.number().int().positive(),
       /**
-       * 何で消費するか。attack = 行動単位の攻撃（通常攻撃・バースト・ダメージを伴うアビ。§7）、damaged = 被弾
+       * 何で消費するか。attack = 行動単位の攻撃（§7）、damaged = 被弾。省略時 attack
        * TODO(spec): §7 消費対象の細部は実機未確認
        */
       consumeOn: z.enum(["attack", "damaged"]).optional(),
@@ -160,73 +202,108 @@ export const Duration = z.union([
     .strict(),
   z.object({ permanent: z.literal(true) }).strict(),
 ]);
-export type Duration = z.infer<typeof Duration>;
 
-// ---------------------------------------------------------------- 効果（effect）
+export const Stack = z
+  .object({
+    max: z.union([z.number().int().positive(), z.null(), z.literal("unknown")]),
+    duration: z.enum(["perStack", "refresh", "unknown"]),
+  })
+  .strict();
+export type Stack = z.infer<typeof Stack>;
 
-const BuffFields = {
-  target: Target,
-  /** 表示名 */
-  buff: z.string(),
-  /** 枠 ID（buffSlots.json） */
-  slot: z.string(),
-  /** 実数値。未調査なら null（§7.2） */
-  amount: z.number().nullable(),
-  duration: Duration,
-  /** false なら解除不可（消去不可の固有効果など） */
-  removable: z.boolean().optional(),
-};
+// ---------------------------------------------------------------- 効果（effect。DSL_PARTS.md §2）
 
+type TargetT = Target;
 type BuffEffectFields = {
-  target: Target;
+  target: TargetT;
   buff: string;
   slot: string;
   amount: number | null;
   duration: Duration;
-  removable?: boolean;
+  stack?: Stack;
+  categories?: z.infer<typeof Category>[];
+  undispellable?: boolean;
+  note?: string | undefined;
 };
 
 export type Effect =
-  | { type: "damage"; target?: "enemy"; category?: z.infer<typeof Category>; hits?: number }
+  | {
+      type: "damage";
+      target: z.infer<typeof EnemyTarget>;
+      category: z.infer<typeof Category>;
+      hits?: NumOrValue;
+      element?: z.infer<typeof Element>;
+      note?: string | undefined;
+    }
   | {
       type: "performAttack";
       attacker: z.infer<typeof AttackerTarget>;
       kind: "normal" | "burst";
       times?: number;
       gaugeAfter?: "zero" | "keep";
+      note?: string | undefined;
     }
+  | { type: "activateAbility"; character: string; ability: string; note?: string | undefined }
   | {
-      type: "addStatus";
-      target: Target;
-      status: string;
-      sources?: z.infer<typeof GaugeBlockSource>[];
-      duration?: Duration;
-      polarity?: z.infer<typeof Polarity>;
-      removable?: boolean;
+      type: "changeCT";
+      target: TargetT;
+      abilities: "self" | "all" | string[] | { color: z.infer<typeof Color> };
+      amount?: NumOrValue;
+      setTo?: number;
+      note?: string | undefined;
     }
-  | { type: "heal"; target: Target }
   | ({ type: "addBuff" } & BuffEffectFields)
   | ({ type: "addDebuff" } & BuffEffectFields)
-  | { type: "removeDebuff"; target: Target; count?: number | "all" }
-  | { type: "gaugeUp"; target: Target; amount: number }
-  | { type: "gaugeDown"; target: Target; amount: number }
-  | { type: "changeCT"; target: Target; abilities: "all" | string[]; amount: number }
-  | { type: "addToken"; target?: Target; token: string; amount: number }
-  | { type: "consumeToken"; target?: Target; token: string; amount: number }
-  | { type: "swapWithSub"; target: Target }
-  | { type: "retire"; target: Target }
-  | { type: "if"; cond: Condition; then: Effect[]; else?: Effect[] }
-  | { type: "switch"; cases: { cond: Condition; then: Effect[] }[]; default?: Effect[] }
-  | { type: "custom"; id: string; params?: Record<string, unknown> };
+  | {
+      type: "addStatus";
+      target: TargetT;
+      status: string;
+      duration?: Duration;
+      sources?: z.infer<typeof GaugeBlockSource>[];
+      undispellable?: boolean;
+      polarity?: z.infer<typeof Polarity>;
+      note?: string | undefined;
+    }
+  | { type: "removeStatus"; target: TargetT; status: string; note?: string | undefined }
+  | { type: "removeDebuff"; target: TargetT; count?: number | "all"; note?: string | undefined }
+  | { type: "heal"; target: TargetT; note?: string | undefined }
+  | { type: "gaugeUp"; target: TargetT; amount?: NumOrValue; fixed?: boolean; note?: string | undefined }
+  | { type: "gaugeDown"; target: TargetT; amount: NumOrValue; note?: string | undefined }
+  | { type: "addToken"; target?: TargetT; name: string; amount: NumOrValue; note?: string | undefined }
+  | { type: "consumeToken"; target?: TargetT; name?: string; group?: string; amount: NumOrValue | "all"; note?: string | undefined }
+  | { type: "swapWithSub"; target: TargetT; note?: string | undefined }
+  | { type: "retire"; target: TargetT; note?: string | undefined }
+  | { type: "if"; cond: Condition; then: Effect[]; else?: Effect[]; note?: string | undefined }
+  | { type: "switch"; cases: { cond: Condition; then: Effect[] }[]; default?: Effect[]; note?: string | undefined }
+  | { type: "repeat"; times: NumOrValue; effects: Effect[]; note?: string | undefined }
+  /** 省略形：読み込み時に if + changeCT(setTo 0) へ展開する（§6 即リキャ） */
+  | { type: "recast"; when: Condition; note?: string | undefined }
+  /** 省略形：読み込み時に sharedEffects の効果へ展開する（§10.2） */
+  | { type: "useEffects"; id: string; note?: string | undefined }
+  | { type: "custom"; id: string; params?: Record<string, unknown>; note?: string | undefined };
+
+const BuffFields = {
+  target: Target,
+  buff: z.string(),
+  slot: z.string(),
+  amount: z.number().nullable(),
+  duration: Duration,
+  stack: Stack.optional(),
+  categories: z.array(Category).optional(),
+  undispellable: z.boolean().optional(),
+  note,
+};
 
 export const Effect: z.ZodType<Effect> = z.lazy(() =>
   z.union([
     z
       .object({
         type: z.literal("damage"),
-        target: z.literal("enemy").optional(),
-        category: Category.optional(),
-        hits: z.number().int().positive().optional(),
+        target: EnemyTarget,
+        category: Category,
+        hits: NumOrValue.optional(),
+        element: Element.optional(),
+        note,
       })
       .strict(),
     z
@@ -236,95 +313,120 @@ export const Effect: z.ZodType<Effect> = z.lazy(() =>
         kind: z.enum(["normal", "burst"]),
         times: z.number().int().positive().optional(),
         gaugeAfter: z.enum(["zero", "keep"]).optional(),
+        note,
       })
       .strict(),
+    z.object({ type: z.literal("activateAbility"), character: z.string(), ability: z.string(), note }).strict(),
+    z
+      .object({
+        type: z.literal("changeCT"),
+        target: Target,
+        abilities: z.union([z.literal("self"), z.literal("all"), z.array(z.string()), z.object({ color: Color }).strict()]),
+        amount: NumOrValue.optional(),
+        setTo: z.number().int().min(0).optional(),
+        note,
+      })
+      .strict()
+      .refine((e) => (e.amount === undefined) !== (e.setTo === undefined), { message: "changeCT は amount か setTo のどちらか一方を書く" }),
+    z.object({ type: z.literal("addBuff"), ...BuffFields }).strict(),
+    z.object({ type: z.literal("addDebuff"), ...BuffFields }).strict(),
     z
       .object({
         type: z.literal("addStatus"),
         target: Target,
         status: z.string(),
-        sources: z.array(GaugeBlockSource).optional(),
         duration: Duration.optional(),
+        sources: z.array(GaugeBlockSource).optional(),
+        undispellable: z.boolean().optional(),
         polarity: Polarity.optional(),
-        removable: z.boolean().optional(),
+        note,
       })
       .strict(),
-    z.object({ type: z.literal("heal"), target: Target }).strict(),
-    z.object({ type: z.literal("addBuff"), ...BuffFields }).strict(),
-    z.object({ type: z.literal("addDebuff"), ...BuffFields }).strict(),
+    z.object({ type: z.literal("removeStatus"), target: Target, status: z.string(), note }).strict(),
     z
       .object({
         type: z.literal("removeDebuff"),
         target: Target,
         count: z.union([z.number().int().positive(), z.literal("all")]).optional(),
+        note,
       })
       .strict(),
-    z.object({ type: z.literal("gaugeUp"), target: Target, amount: z.number() }).strict(),
-    z.object({ type: z.literal("gaugeDown"), target: Target, amount: z.number() }).strict(),
+    z.object({ type: z.literal("heal"), target: Target, note }).strict(),
+    z.object({ type: z.literal("gaugeUp"), target: Target, amount: NumOrValue.optional(), fixed: z.boolean().optional(), note }).strict(),
+    z.object({ type: z.literal("gaugeDown"), target: Target, amount: NumOrValue, note }).strict(),
+    z.object({ type: z.literal("addToken"), target: Target.optional(), name: z.string(), amount: NumOrValue, note }).strict(),
     z
       .object({
-        type: z.literal("changeCT"),
-        target: Target,
-        abilities: z.union([z.literal("all"), z.array(z.string())]),
-        amount: z.number().int(),
+        type: z.literal("consumeToken"),
+        target: Target.optional(),
+        name: z.string().optional(),
+        group: z.string().optional(),
+        amount: z.union([NumOrValue, z.literal("all")]),
+        note,
       })
-      .strict(),
-    z
-      .object({ type: z.literal("addToken"), target: Target.optional(), token: z.string(), amount: z.number().int() })
-      .strict(),
-    z
-      .object({ type: z.literal("consumeToken"), target: Target.optional(), token: z.string(), amount: z.number().int() })
-      .strict(),
-    z.object({ type: z.literal("swapWithSub"), target: Target }).strict(),
-    z.object({ type: z.literal("retire"), target: Target }).strict(),
-    z.object({ type: z.literal("if"), cond: Condition, then: z.array(Effect), else: z.array(Effect).optional() }).strict(),
+      .strict()
+      .refine((e) => (e.name === undefined) !== (e.group === undefined), { message: "consumeToken は name か group のどちらか一方を書く" }),
+    z.object({ type: z.literal("swapWithSub"), target: Target, note }).strict(),
+    z.object({ type: z.literal("retire"), target: Target, note }).strict(),
+    z.object({ type: z.literal("if"), cond: Condition, then: z.array(Effect), else: z.array(Effect).optional(), note }).strict(),
     z
       .object({
         type: z.literal("switch"),
         cases: z.array(z.object({ cond: Condition, then: z.array(Effect) }).strict()),
         default: z.array(Effect).optional(),
+        note,
       })
       .strict(),
-    z.object({ type: z.literal("custom"), id: z.string(), params: z.record(z.string(), z.unknown()).optional() }).strict(),
+    z.object({ type: z.literal("repeat"), times: NumOrValue, effects: z.array(Effect), note }).strict(),
+    z.object({ type: z.literal("recast"), when: Condition, note }).strict(),
+    z.object({ type: z.literal("useEffects"), id: z.string(), note }).strict(),
+    z.object({ type: z.literal("custom"), id: z.string(), params: z.record(z.string(), z.unknown()).optional(), note }).strict(),
   ]),
 );
 
-/** 分岐の入れ子の深さ（§10.2 3 段を超える場合は custom に回す） */
-export function branchDepth(effects: Effect[]): number {
-  let max = 0;
+/**
+ * 入れ子の段数（§10.2、DSL_PARTS.md §2）。いちばん外の効果の配列を 1 段目とし、
+ * if の then・else、switch の cases・default、repeat の effects に入るたびに 1 段増える。
+ * recast は if に展開されるので、中の changeCT を 1 段深いものとして数える。
+ */
+export function effectDepth(effects: readonly Effect[], level = 1): number {
+  let max = effects.length > 0 ? level : 0;
   for (const e of effects) {
-    if (e.type === "if") {
-      max = Math.max(max, 1 + Math.max(branchDepth(e.then), branchDepth(e.else ?? [])));
-    } else if (e.type === "switch") {
-      const inner = Math.max(0, ...e.cases.map((c) => branchDepth(c.then)), branchDepth(e.default ?? []));
-      max = Math.max(max, 1 + inner);
-    }
+    if (e.type === "if") max = Math.max(max, effectDepth(e.then, level + 1), effectDepth(e.else ?? [], level + 1));
+    else if (e.type === "switch") {
+      for (const c of e.cases) max = Math.max(max, effectDepth(c.then, level + 1));
+      max = Math.max(max, effectDepth(e.default ?? [], level + 1));
+    } else if (e.type === "repeat") max = Math.max(max, effectDepth(e.effects, level + 1));
+    else if (e.type === "recast") max = Math.max(max, level + 1);
   }
   return max;
 }
 
-export const MAX_BRANCH_DEPTH = 3;
+export const MAX_EFFECT_DEPTH = 3;
 
-export const EffectList = z
-  .array(Effect)
-  .refine((effects) => branchDepth(effects) <= MAX_BRANCH_DEPTH, {
-    message: `if / switch の入れ子は ${MAX_BRANCH_DEPTH} 段まで（§10.2）。超える場合は custom を使う`,
-  });
+export const EffectList = z.array(Effect).refine((effects) => effectDepth(effects) <= MAX_EFFECT_DEPTH, {
+  message: `効果の入れ子は ${MAX_EFFECT_DEPTH} 段まで（§10.2）。超える場合は条件を and でまとめるか custom を使う`,
+});
 
 // ---------------------------------------------------------------- コスト・回数制限・トリガー
 
+/** コスト（§6 条件付きコスト）。when は使う前に評価する */
 export const Cost = z.union([
-  z.object({ type: z.literal("gauge"), amount: z.number().positive(), cond: Condition.optional() }).strict(),
+  z.object({ gauge: z.number().positive(), when: Condition.optional() }).strict(),
   z
-    .object({ type: z.literal("token"), token: z.string(), amount: z.number().int().positive(), cond: Condition.optional() })
+    .object({
+      token: z.object({ name: z.string(), amount: z.number().int().positive() }).strict(),
+      when: Condition.optional(),
+    })
     .strict(),
+  z.object({ hpRate: z.number().positive(), when: Condition.optional() }).strict(),
 ]);
 export type Cost = z.infer<typeof Cost>;
 
 export const Limit = z
   .object({
-    perTurn: z.number().int().positive().optional(),
-    perBattle: z.number().int().positive().optional(),
+    perTurn: NumOrValue.optional(),
+    perBattle: NumOrValue.optional(),
   })
   .strict();
 export type Limit = z.infer<typeof Limit>;
@@ -337,18 +439,26 @@ export const Trigger = z
   .strict();
 export type Trigger = z.infer<typeof Trigger>;
 
+/** 1 つのアシストを分けて書いたときの元のアシスト、またはアビの常時効果の元のアビ（§4.2） */
+export const AssistOrigin = z.union([
+  z.object({ kind: z.literal("assist"), index: z.number().int().positive() }).strict(),
+  z.object({ kind: z.literal("ability"), id: z.string() }).strict(),
+]);
+export type AssistOrigin = z.infer<typeof AssistOrigin>;
+
 export const Assist = z
   .object({
     id: z.string(),
     name: z.string().optional(),
-    description: z.string().optional(),
     trigger: Trigger,
     cond: Condition.optional(),
     cost: z.array(Cost).optional(),
     limit: Limit.optional(),
     /** 有効範囲（§4.4）。既定 main */
     activeIn: z.enum(["main", "sub", "both"]).optional(),
+    origin: AssistOrigin.optional(),
     effects: EffectList,
+    note,
   })
   .strict();
 export type Assist = z.infer<typeof Assist>;

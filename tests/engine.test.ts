@@ -101,7 +101,7 @@ describe("バーストゲージ（§8）", () => {
         {
           id: "demerit",
           trigger: { event: "battleStart" },
-          effects: [{ type: "addStatus", target: "self", status: "gaugeGainBlocked", sources: ["normalAttack"], removable: false }],
+          effects: [{ type: "addStatus", target: "self", status: "gaugeGainBlocked", sources: ["normalAttack"], undispellable: true }],
         },
       ],
     });
@@ -117,7 +117,7 @@ describe("バーストゲージ（§8）", () => {
 describe("アビ効果の攻撃（§10.2）", () => {
   it("performAttack(normal)：ゲージが上がり、通常攻撃として数え、その場ではバーストしない", () => {
     const a = plain("a", {
-      abilities: [{ id: "pa", name: "pa", color: "red", ct: 0, category: "ability", effects: [{ type: "performAttack", attacker: "self", kind: "normal" }] }],
+      abilities: [{ id: "pa", name: "pa", color: "red", ct: 0, effects: [{ type: "performAttack", attacker: "self", kind: "normal" }] }],
     });
     const b = new Battle(makeInput({ front1: a }, { corrections: { a: { startGauge: 95 } } }));
     b.apply(use("a", "pa"));
@@ -191,12 +191,12 @@ describe("条件の評価時点（§4.7）", () => {
           color: "red",
           ct: 0,
           effects: [
-            { type: "damage", target: "enemy" },
+            { type: "damage", target: "enemy", category: "ability" },
             { type: "gaugeUp", target: "self", amount: 50 },
           ],
         },
       ],
-      assists: [{ id: "chk", trigger: { event: "damage" }, cond: { gauge: { gte: 50 } }, effects: [{ type: "addToken", token: "t", amount: 1 }] }],
+      assists: [{ id: "chk", trigger: { event: "damage" }, cond: { gauge: { gte: 50 } }, effects: [{ type: "addToken", name: "t", amount: 1 }] }],
       tokens: [{ name: "t" }],
     });
     const after = new Battle(makeInput({ front1: a }));
@@ -213,7 +213,7 @@ describe("アシストの処理順（§6.1）", () => {
   const heroA = plain("ha", {
     kind: "hero",
     tokens: [{ name: "t" }],
-    assists: [{ id: "A", trigger: { event: "turnStart" }, cond: { gauge: { gte: 100 } }, effects: [{ type: "addToken", token: "t", amount: 1 }] }],
+    assists: [{ id: "A", trigger: { event: "turnStart" }, cond: { gauge: { gte: 100 } }, effects: [{ type: "addToken", name: "t", amount: 1 }] }],
   });
   const mainB = plain("mb", {
     assists: [{ id: "B", trigger: { event: "turnStart" }, effects: [{ type: "gaugeUp", target: { alliesWhere: { position: "hero" } }, amount: 100 }] }],
@@ -264,7 +264,7 @@ describe("アシストの処理順（§6.1）", () => {
         { id: "L1", trigger: { event: "damage", filter: { category: "ability" } }, effects: [{ type: "damage", target: "enemy", category: "normal" }] },
         { id: "L2", trigger: { event: "damage", filter: { category: "normal" } }, effects: [{ type: "damage", target: "enemy", category: "ability" }] },
       ],
-      abilities: [{ id: "x", name: "x", color: "red", ct: 0, effects: [{ type: "damage", target: "enemy" }] }],
+      abilities: [{ id: "x", name: "x", color: "red", ct: 0, effects: [{ type: "damage", target: "enemy", category: "ability" }] }],
     });
     const b = new Battle(makeInput({ front1: loop }));
     const r = b.apply(use("l", "x"));
@@ -281,7 +281,7 @@ describe("バフ・デバフ（§7）", () => {
     ct: 0,
     effects: [{ type: "addBuff", target: "self", buff: `攻撃UP${amount}`, slot, amount, duration: { turns } } as Effect],
   });
-  const a = plain("a", { abilities: [buffer("b30", 30, 3), buffer("b20", 20, 3), buffer("b30s", 30, 1), buffer("bnull", null, 2), buffer("gr", 50, 2, "gaugeRateUp")] });
+  const a = plain("a", { abilities: [buffer("b30", 30, 3), buffer("b20", 20, 3), buffer("b30s", 30, 1), buffer("bnull", null, 2), buffer("gr", 50, 2, "test_gaugeRateUp")] });
 
   it("小さい効果は MISS で既存の持続も更新しない", () => {
     const b = new Battle(makeInput({ front1: a }));
@@ -331,7 +331,7 @@ describe("バフ・デバフ（§7）", () => {
 
   it("デバフの合計下限に達していたら効果なしを警告する", () => {
     const deb = (slot: string, amount: number): Effect => ({ type: "addDebuff", target: "enemy", buff: slot, slot, amount, duration: { turns: 3 } });
-    const d = plain("d", { abilities: [{ id: "x", name: "x", color: "purple", ct: 0, effects: [deb("defDownA", 30), deb("defDownB", 20), deb("defDownC", 10)] }] });
+    const d = plain("d", { abilities: [{ id: "x", name: "x", color: "purple", ct: 0, effects: [deb("atkDownA", 30), deb("atkDownB", 20), deb("atkDownC", 10)] }] });
     const b = new Battle(makeInput({ front1: d }));
     b.apply(use("d", "x"));
     expect(b.state.enemy.buffs).toHaveLength(3);
@@ -362,7 +362,7 @@ describe("交代と補充（§4.4）", () => {
     expect(b.state.formation[2]).toBe("m2"); // まだ補充されない
     b.apply(nextTurn);
     expect(b.state.formation).toEqual([null, "m1", "u1", "m3", "u2", null, null]);
-    expect(b.state.log.filter((e) => e.type === "enterBattle").map((e) => e.route)).toEqual(["replenish", "replenish"]);
+    expect(b.state.log.filter((e) => e.type === "enterBattle").map((e) => e.via)).toEqual(["replenish", "replenish"]);
   });
 
   it("サブ待機中は CT が進まない", () => {

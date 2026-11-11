@@ -28,6 +28,8 @@ interface Bar {
   polarity: "buff" | "debuff";
   durationType?: "turns" | "count" | "permanent";
   remaining: number[];
+  /** 累積型の累積数（付与した時点。§7.1） */
+  stacks?: number;
   label?: string;
   opIndex: number;
   endKind: EndKind;
@@ -49,7 +51,8 @@ const BUFF_EVENTS = new Set(["buffApplied", "buffOverwritten", "buffMissed", "bu
  */
 function buildRows(log: readonly BattleEvent[], lastCol: number, shortened: Set<string>, slotName: (s: string) => string): Row[] {
   const rows = new Map<string, Row>();
-  const open = new Map<string, Bar>();
+  // 累積型は 1 段ごとに棒を持つので、行ごとに開いている棒の列を持つ（古い順）
+  const open = new Map<string, Bar[]>();
   for (const e of log) {
     if (!BUFF_EVENTS.has(e.type) || !e.target) continue;
     const key = `${e.target}|${e.slot ?? `status:${e.buff}`}`;
@@ -59,18 +62,25 @@ function buildRows(log: readonly BattleEvent[], lastCol: number, shortened: Set<
       rows.set(key, row);
     }
     const col = colOf(e.turn, e.phase);
-    const close = (kind: EndKind) => {
-      const b = open.get(key);
-      if (!b) return;
+    const closeBar = (b: Bar, kind: EndKind) => {
       b.end = Math.max(b.start, col);
       b.endKind = kind;
       b.endOp = e.opIndex;
+    };
+    /** いちばん古い棒を閉じる（累積型の 1 段が切れた・消費された・解除された） */
+    const close = (kind: EndKind) => {
+      const list = open.get(key);
+      const b = list?.shift();
+      if (b) closeBar(b, kind);
+    };
+    const closeAll = (kind: EndKind) => {
+      for (const b of open.get(key) ?? []) closeBar(b, kind);
       open.delete(key);
     };
     switch (e.type) {
       case "buffApplied":
       case "buffOverwritten": {
-        if (e.type === "buffOverwritten") close(shortened.has(`${e.opIndex}|${e.target}`) ? "shortened" : "overwritten");
+        if (e.type === "buffOverwritten") closeAll(shortened.has(`${e.opIndex}|${e.target}`) ? "shortened" : "overwritten");
         const bar: Bar = {
           start: col,
           end: lastCol,
@@ -82,16 +92,17 @@ function buildRows(log: readonly BattleEvent[], lastCol: number, shortened: Set<
           ...(e.amount !== undefined ? { amount: e.amount } : {}),
           ...(e.durationType ? { durationType: e.durationType } : {}),
           ...(e.label ? { label: e.label } : {}),
+          ...(e.stacks !== undefined ? { stacks: e.stacks } : {}),
         };
         row.bars.push(bar);
-        open.set(key, bar);
+        open.set(key, [...(open.get(key) ?? []), bar]);
         break;
       }
       case "buffMissed":
         row.misses.push({ col, ev: e });
         break;
       case "buffConsumed": {
-        const b = open.get(key);
+        const b = open.get(key)?.[0];
         if (b && e.remaining !== undefined) b.remaining.push(e.remaining);
         if (e.remaining === 0) close("consumed");
         break;
@@ -105,6 +116,17 @@ function buildRows(log: readonly BattleEvent[], lastCol: number, shortened: Set<
     }
   }
   return [...rows.values()];
+}
+
+/** 重なる棒（累積型の段など）を別の段に並べる */
+function withLanes(bars: readonly Bar[]): { bar: Bar; lane: number }[] {
+  const laneEnds: number[] = [];
+  return bars.map((bar) => {
+    let lane = laneEnds.findIndex((end) => end < bar.start);
+    if (lane < 0) lane = laneEnds.length;
+    laneEnds[lane] = bar.end;
+    return { bar, lane };
+  });
 }
 
 const END_LABEL: Record<EndKind, string> = {
@@ -209,11 +231,11 @@ export function GanttView({ catalog, chart, model, jumpTo }: Props) {
                       [...subs].map((c) => (
                         <div key={`s${c}`} className="gantt-sub" style={{ gridColumn: `${c + 1}`, gridRow: 1 }} title="サブで待機中（バフ解除の扱いは仮置き §4.4）" />
                       ))}
-                    {r.bars.map((b, i) => (
+                    {withLanes(r.bars).map(({ bar: b, lane }, i) => (
                       <button
                         key={i}
                         className={`gantt-bar ${b.polarity} end-${b.endKind}`}
-                        style={{ gridColumn: `${b.start + 1} / ${b.end + 2}`, gridRow: 1 }}
+                        style={{ gridColumn: `${b.start + 1} / ${b.end + 2}`, gridRow: lane + 1 }}
                         onClick={() => jump(b.opIndex)}
                         title={[
                           b.name,
@@ -227,6 +249,7 @@ export function GanttView({ catalog, chart, model, jumpTo }: Props) {
                       >
                         {b.name}
                         {b.durationType === "count" && <small> ×{b.remaining[b.remaining.length - 1]}</small>}
+                        {b.stacks !== undefined && <small> 累積{b.stacks}</small>}
                       </button>
                     ))}
                     {r.misses.map((m, i) => (

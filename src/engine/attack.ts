@@ -9,6 +9,25 @@ import { consumeCountBuffs } from "./buffs";
 import { NORMAL_ATTACK_GAUGE, gainGauge, setGauge } from "./gauge";
 import { runEffects } from "./effects";
 import type { AttackAction } from "./types";
+import type { Effect } from "../schema/dsl";
+import { expandEffects } from "../schema/expand";
+import { warnOnce } from "./context";
+
+/** バーストの効果が未設定のときの既定（バースト区分の自属性ダメージ 1 ヒット。§4.9 確定） */
+const DEFAULT_BURST: Effect[] = [{ type: "damage", target: "allEnemies", category: "burst", hits: 1 }];
+
+/**
+ * バーストの効果（§4.9）。burst.userDefined のキャラはユーザー補正の上書きを使い、なければキャラ定義の既定の効果。
+ * どちらも無ければ自属性ダメージ 1 ヒットとし、「バーストの効果が未設定」を表示する。
+ */
+export function burstEffects(ctx: Ctx, charId: string): readonly Effect[] {
+  const d = def(ctx, charId);
+  const user = ctx.input.corrections[charId]?.burst;
+  if (d.burst.userDefined && user) return expandEffects(user, d.sharedEffects);
+  if (d.burst.effects) return d.burst.effects;
+  warnOnce(ctx, `burstUnset:${charId}`, "burstUnset", `${d.name}のバーストの効果が未設定（自属性ダメージ 1 ヒットとして扱う）`, charId);
+  return DEFAULT_BURST;
+}
 
 export interface AttackOptions {
   origin: "attackPhase" | "ability";
@@ -81,7 +100,7 @@ export function performAttack(ctx: Ctx, parent: Exec, charId: string, kind: "nor
     }
   }
   emit(ctx, { type: "burst", sourceKind: "burst", actor: charId, gaugeConsumed: consumedGauge, origin: opts.origin });
-  runEffects(ctx, exec, d.burst.effects);
+  runEffects(ctx, exec, burstEffects(ctx, charId));
   consumeCountBuffs(ctx, exec, charId, "attack", startSeq);
   return { charId, kind };
 }

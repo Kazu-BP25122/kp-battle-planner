@@ -16,6 +16,8 @@ interface Props {
   record: (ops: Op[], label?: string) => void;
   setCursor: (c: Cursor) => void;
   openChart: () => void;
+  /** プレイのリセット（操作の記録を消して戦闘開始に戻す） */
+  onReset: () => void;
 }
 
 const AFFINITY_LABEL = { advantage: "有利", neutral: "", disadvantage: "不利" } as const;
@@ -35,7 +37,7 @@ function BuffChips({ buffs }: { buffs: BuffInstance[] }) {
   );
 }
 
-export function PlayScreen({ catalog, chart, model, record, setCursor, openChart }: Props) {
+export function PlayScreen({ catalog, chart, model, record, setCursor, openChart, onReset }: Props) {
   const { state, live } = model;
   const [openChar, setOpenChar] = useState<string | null>(null);
   const [chosen, setChosen] = useState<Record<string, string>>({});
@@ -107,7 +109,9 @@ export function PlayScreen({ catalog, chart, model, record, setCursor, openChart
               </span>
             );
           })}
-          {Object.entries(c.tokens).map(([k, v]) => (
+          {Object.entries(c.tokens)
+            .filter(([k]) => !d.tokens?.find((t) => t.name === k)?.hidden)
+            .map(([k, v]) => (
             <span key={k} className="token">
               {k}×{v}
             </span>
@@ -146,7 +150,7 @@ export function PlayScreen({ catalog, chart, model, record, setCursor, openChart
                     </select>
                   )}
                   {!usable && <span className="reasons">{reasons.map((r) => UNUSABLE_LABEL[r]).join("・")}</span>}
-                  {a.description && <p className="desc">{a.description}</p>}
+                  {a.note && <p className="desc">{a.note}</p>}
                 </li>
               );
             })}
@@ -169,6 +173,9 @@ export function PlayScreen({ catalog, chart, model, record, setCursor, openChart
           <span>{PHASE_LABEL[state.phase]}</span>
           <button className="link" onClick={openChart}>
             チャートを見る →
+          </button>
+          <button onClick={onReset} disabled={chart.nodes.length === 0} title="操作の記録をすべて消して戦闘開始に戻す（編成・補正・設定は残る。「戻す」で取り消せる）">
+            リセット
           </button>
         </div>
         <div className="enemy">

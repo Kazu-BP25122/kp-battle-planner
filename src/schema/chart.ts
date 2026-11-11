@@ -6,7 +6,8 @@ import { z } from "zod";
 import { Element } from "./common";
 import { Assist, Effect } from "./dsl";
 
-export const CHART_VERSION = 1;
+/** 2：キャラ定義・効果 DSL の形式変更（AGENTS.md 2026-11-11 版）。1 のデータは読み込まない */
+export const CHART_VERSION = 2;
 
 const CharId = z.string();
 
@@ -104,6 +105,13 @@ export const CharCorrection = z
     tripleRate: z.number().min(0).max(100).optional(),
     /** 詳細入力：ユーザー定義アシスト（§4.9） */
     assists: z.array(Assist).optional(),
+    /** キャラのオプション（§4.2、§4.9）。未選択なら定義の default */
+    options: z.record(z.string(), z.union([z.boolean(), z.string(), z.number()])).optional(),
+    /**
+     * ユーザー定義のバースト（burst.userDefined のキャラのみ。§4.9）。
+     * 初期版は入力 UI を作らない（§15.3）が、データ形式とエンジンは対応しておく
+     */
+    burst: z.array(Effect).optional(),
   })
   .strict()
   .refine((c) => (c.doubleRate ?? 0) + (c.tripleRate ?? 0) <= 100, { message: "2 段・3 段攻撃率の合計は 100% 以下" });

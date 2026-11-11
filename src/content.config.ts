@@ -9,8 +9,9 @@ const characters = defineCollection({
   schema: Character,
 });
 
+// buffSlots.json は { note, slots: [...] } の形（§7.2）。slots の各要素を 1 エントリとして読む
 const buffSlots = defineCollection({
-  loader: file("./src/content/buffSlots.json"),
+  loader: file("./src/content/buffSlots.json", { parser: (text) => JSON.parse(text).slots }),
   schema: BuffSlot,
 });
 

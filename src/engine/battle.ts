@@ -164,7 +164,7 @@ export class Battle {
       case "damaged": {
         if (!isActiveMain(ctx, e.target)) return warn(ctx, "opInvalid", `${charLabel(ctx, e.target)}はメインにいないため被弾できない`, e.target);
         const start = ctx.state.log.length;
-        emit(ctx, { type: "damaged", sourceKind: "manual", actor: null, element: ctx.state.enemy.element, target: e.target, count: e.count });
+        emit(ctx, { type: "damaged", sourceKind: "manual", actor: null, sourceElement: ctx.state.enemy.element, target: e.target, count: e.count });
         // TODO(spec): §7・§11 防御系の回数制バフが多段の敵攻撃でヒット単位に減るかは未確定。被弾回数ぶん減らす
         consumeCountBuffs(ctx, { ...exec, self: e.target }, e.target, "damaged", start + 1, e.count);
         break;
@@ -252,6 +252,7 @@ export function cloneState(s: BattleState): BattleState {
     enemy: { ...s.enemy, buffs: s.enemy.buffs.map((b) => ({ ...b, duration: { ...b.duration } })) },
     log: [...s.log],
     warnings: [...s.warnings],
+    warnedOnce: [...s.warnedOnce],
   };
 }
 

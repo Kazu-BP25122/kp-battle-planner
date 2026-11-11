@@ -1,20 +1,23 @@
 import type { Target } from "../schema/dsl";
 import type { Ctx, Exec } from "./context";
-import { activeMainIds, isActiveMain, slotOf } from "./context";
+import { activeMainIds, isActiveMain, slotOf, subIds } from "./context";
 import { slotPosition } from "./types";
 
 /**
  * 対象部品（§10.1）を ID の列に解決する。敵は "enemy"。
+ * - allEnemies・randomEnemy：初期版は敵 1 体として扱う（§10.2）ので "enemy" と同じ。
+ * - alliesWhere の includeSub：サブも含める。なければメインだけ。
  * TODO(spec): §11「味方全体」の対象にサブは含まれるか未確定。メイン（英霊を含む・戦闘不能を除く）だけとする
  */
 export function resolveTargets(ctx: Ctx, exec: Exec, target: Target | undefined): string[] {
   const t = target ?? "self";
   if (t === "self") return [exec.self];
-  if (t === "enemy") return ["enemy"];
+  if (t === "enemy" || t === "allEnemies" || t === "randomEnemy") return ["enemy"];
   if (t === "allAllies") return activeMainIds(ctx);
   if (t === "chosenAlly") return exec.chosenAlly && isActiveMain(ctx, exec.chosenAlly) ? [exec.chosenAlly] : [];
   const w = t.alliesWhere;
-  return activeMainIds(ctx).filter((id) => {
+  const pool = w.includeSub ? [...activeMainIds(ctx), ...subIds(ctx)] : activeMainIds(ctx);
+  return pool.filter((id) => {
     if (w.excludeSelf && id === exec.self) return false;
     if (w.element !== undefined) {
       const el = ctx.input.characters[id]!.element;

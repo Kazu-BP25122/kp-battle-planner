@@ -28,7 +28,7 @@ describe("成功確率（§9）", () => {
   });
 
   it("使えないアビは失敗。連撃率が未入力のキャラを報告する", () => {
-    const a = plain("a", { abilities: [{ id: "x", name: "x", color: "red", ct: 0, cond: { gauge: { gte: 30 } }, effects: [] }] });
+    const a = plain("a", { abilities: [{ id: "x", name: "x", color: "red", ct: 0, usable: { gauge: { gte: 30 } }, effects: [] }] });
     const input = makeInput({ front1: a, front2: plain("b") }, { corrections: { a: { doubleRate: 50 } } });
     // 記録時（1 段）は 10 で使えない計画 → 全試行が失敗
     const r = runMonteCarlo(input, [attack(), nextTurn, use("a", "x")], 200, { seed: 3 });

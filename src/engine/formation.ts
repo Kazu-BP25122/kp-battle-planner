@@ -36,11 +36,11 @@ export function swapWithSub(ctx: Ctx, exec: Exec, outId: string): void {
   // TODO(spec): §4.4 控えに回ったときのバフ・デバフは情報が矛盾。情報 B（原則解除、消去不可は保持）で仮置き
   const out = ctx.state.chars[outId]!;
   for (const b of [...out.buffs]) {
-    if (b.removable) removeBuff(ctx, exec, outId, b.uid, "buffRemoved");
+    if (!b.undispellable) removeBuff(ctx, exec, outId, b.uid, "buffRemoved");
   }
   emit(ctx, { type: "swappedOut", sourceKind: exec.sourceKind, actor: outId });
   ctx.state.chars[inId]!.hasEntered = true;
-  emit(ctx, { type: "enterBattle", sourceKind: exec.sourceKind, actor: inId, route: "swap" });
+  emit(ctx, { type: "enterBattle", sourceKind: exec.sourceKind, actor: inId, via: "swap" });
 }
 
 /** 戦闘不能（§4.4 ①③）。補充はターンエンド処理で行う */
@@ -94,6 +94,6 @@ export function replenish(ctx: Ctx, exec: Exec): void {
   for (const f of plan.fills) {
     if (!f.inId) continue;
     ctx.state.chars[f.inId]!.hasEntered = true;
-    emit(ctx, { type: "enterBattle", sourceKind: exec.sourceKind, actor: f.inId, route: "replenish" });
+    emit(ctx, { type: "enterBattle", sourceKind: exec.sourceKind, actor: f.inId, via: "replenish" });
   }
 }

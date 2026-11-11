@@ -1,4 +1,5 @@
 import type { Character } from "../schema/character";
+import { expandAssist, expandCharacter } from "../schema/expand";
 import type { BuffSlot } from "../schema/buffSlot";
 import type { Category, SourceKind } from "../schema/common";
 import { PARTY_SLOTS } from "../schema/chart";
@@ -52,17 +53,23 @@ export interface Exec {
   chosenAlly?: string;
   /** 付与元の表示名 */
   label: string;
-  /** 今回の使用を useCount に含める（コスト判定時。§10.2 今回の使用を含めて数える） */
-  pendingUse?: boolean;
-  /** count 条件で数えるイベントの通し番号の上限（§4.7 条件の評価時点） */
-  seqLimit?: number;
+  /**
+   * 回数を数える範囲（§4.7 条件の評価時点）。アシストの判定では、処理中のイベントの通し番号（upTo）以下と、
+   * そのタイミングの処理を始めてから記録されたもの（from 以上）を数える。
+   * キューに積まれたまだ処理していないイベント（upTo より後、from より前）は数えない。省略時はログ全体。
+   */
+  window?: { upTo: number; from: number };
+  /** アシストを発動させたイベント（条件 trigger で参照する。§10.2） */
+  triggerEvent?: BattleEvent;
   /** この効果処理で持ち主がダメージを与えたか（回数制バフの消費に使う） */
   dealtDamage: boolean;
   /** アビ効果の performAttack 中か */
   inAbility?: boolean;
 }
 
-export function createCtx(input: EngineInput, options: EngineOptions = {}): Ctx {
+export function createCtx(rawInput: EngineInput, options: EngineOptions = {}): Ctx {
+  // 省略形（recast・useEffects）を展開してからエンジンに渡す（§6、§10.2）
+  const input: EngineInput = { ...rawInput, characters: Object.fromEntries(Object.entries(rawInput.characters).map(([k, c]) => [k, expandCharacter(c)])) };
   const slots = new Map(input.buffSlots.map((s) => [s.id, s]));
   const state: BattleState = {
     turn: 1,
@@ -75,6 +82,7 @@ export function createCtx(input: EngineInput, options: EngineOptions = {}): Ctx 
     warnings: [],
     nextUid: 1,
     attacked: false,
+    warnedOnce: [],
   };
   const ctx: Ctx = {
     state,
@@ -105,9 +113,10 @@ export function createCtx(input: EngineInput, options: EngineOptions = {}): Ctx 
   // アシストをトリガーごとに索引する。ユーザー定義アシスト（§4.9）は持ち主のアシストの後ろに並べる
   for (const id of Object.keys(state.chars)) {
     const def = input.characters[id]!;
-    const own: OwnedAssist[] = def.assists.map((assist, index) => ({ owner: id, assist, index, user: false }));
+    const assists = def.assists ?? [];
+    const own: OwnedAssist[] = assists.map((assist, index) => ({ owner: id, assist, index, user: false }));
     const userAssists = input.corrections[id]?.assists ?? [];
-    userAssists.forEach((assist, k) => own.push({ owner: id, assist, index: def.assists.length + k, user: true }));
+    userAssists.forEach((assist, k) => own.push({ owner: id, assist: expandAssist(assist, def.sharedEffects), index: assists.length + k, user: true }));
     for (const oa of own) {
       const list = ctx.assistsByEvent.get(oa.assist.trigger.event) ?? [];
       list.push(oa);
@@ -121,7 +130,7 @@ export function initialCharState(def: Character, inMain: boolean): CharState {
   const ct: Record<string, number> = {};
   for (const a of def.abilities) ct[a.id] = 0;
   const tokens: Record<string, number> = {};
-  for (const t of def.tokens ?? []) tokens[t.name] = 0;
+  for (const t of def.tokens ?? []) tokens[t.name] = t.initial ?? 0;
   return { id: def.id, hp: 100, gauge: 0, ct, tokens, buffs: [], knockedOut: false, hasEntered: inMain };
 }
 
@@ -171,11 +180,12 @@ export function subIds(ctx: Ctx): string[] {
 
 // ---------------------------------------------------------------- イベント・警告
 
-export function emit(ctx: Ctx, e: Omit<BattleEvent, "seq" | "turn" | "phase" | "opIndex" | "element"> & { element?: BattleEvent["element"] }): BattleEvent {
-  const element = e.element !== undefined ? e.element : e.actor && ctx.input.characters[e.actor] ? ctx.input.characters[e.actor]!.element : null;
+export function emit(ctx: Ctx, e: Omit<BattleEvent, "seq" | "turn" | "phase" | "opIndex" | "sourceElement"> & { sourceElement?: BattleEvent["sourceElement"] }): BattleEvent {
+  const sourceElement =
+    e.sourceElement !== undefined ? e.sourceElement : e.actor && ctx.input.characters[e.actor] ? ctx.input.characters[e.actor]!.element : null;
   const ev: BattleEvent = {
     ...e,
-    element,
+    sourceElement,
     seq: ctx.state.log.length,
     turn: ctx.state.turn,
     phase: ctx.state.phase,
@@ -190,6 +200,13 @@ export function warn(ctx: Ctx, code: WarningCode, message: string, charId?: stri
   const w: Warning = { code, message, opIndex: ctx.opIndex, turn: ctx.state.turn };
   if (charId !== undefined) w.charId = charId;
   ctx.state.warnings.push(w);
+}
+
+/** 同じ key の警告は戦闘中に 1 回だけ出す */
+export function warnOnce(ctx: Ctx, key: string, code: WarningCode, message: string, charId?: string): void {
+  if (ctx.state.warnedOnce.includes(key)) return;
+  ctx.state.warnedOnce.push(key);
+  warn(ctx, code, message, charId);
 }
 
 export function step(ctx: Ctx): void {

@@ -1,0 +1,941 @@
+{
+  "id": "amon",
+  "name": "[HELIX]アモン",
+  "kind": "kamihime",
+  "element": "thunder",
+  "gaugeMax": 100,
+  "burstConsume": "subtract100",
+  "burst": {
+    "name": "HELIX of Amon+",
+    "effects": [
+      {
+        "type": "damage",
+        "target": "allEnemies",
+        "category": "burst",
+        "note": "特大"
+      },
+      {
+        "type": "changeCT",
+        "target": "self",
+        "abilities": "all",
+        "amount": -1
+      },
+      {
+        "type": "switch",
+        "cases": [
+          {
+            "cond": {
+              "token": {
+                "name": "連理魔力",
+                "gte": 21
+              }
+            },
+            "then": [
+              {
+                "type": "addBuff",
+                "target": {
+                  "alliesWhere": {
+                    "element": "thunder"
+                  }
+                },
+                "buff": "雷属性攻撃UP",
+                "slot": "elementAtkUp",
+                "amount": 45,
+                "duration": {
+                  "turns": null
+                }
+              }
+            ]
+          },
+          {
+            "cond": {
+              "token": {
+                "name": "連理魔力",
+                "gte": 11
+              }
+            },
+            "then": [
+              {
+                "type": "addBuff",
+                "target": {
+                  "alliesWhere": {
+                    "element": "thunder"
+                  }
+                },
+                "buff": "雷属性攻撃UP",
+                "slot": "elementAtkUp",
+                "amount": 30,
+                "duration": {
+                  "turns": null
+                }
+              }
+            ]
+          },
+          {
+            "cond": {
+              "token": {
+                "name": "連理魔力",
+                "gte": 1
+              }
+            },
+            "then": [
+              {
+                "type": "addBuff",
+                "target": {
+                  "alliesWhere": {
+                    "element": "thunder"
+                  }
+                },
+                "buff": "雷属性攻撃UP",
+                "slot": "elementAtkUp",
+                "amount": 15,
+                "duration": {
+                  "turns": null
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "tokens": [
+    {
+      "name": "連理魔力"
+    }
+  ],
+  "abilities": [
+    {
+      "id": "amon_a1",
+      "name": "連理呪縛+",
+      "color": "red",
+      "ct": 2,
+      "effects": [
+        {
+          "type": "damage",
+          "target": "allEnemies",
+          "category": "ability"
+        },
+        {
+          "type": "addDebuff",
+          "target": "allEnemies",
+          "buff": "攻撃DOWN",
+          "slot": "amon_atkDown",
+          "amount": null,
+          "stack": {
+            "max": "unknown",
+            "duration": "unknown"
+          },
+          "duration": {
+            "turns": 8
+          },
+          "note": "必中/専用/累積可。合計最大40%"
+        },
+        {
+          "type": "if",
+          "cond": {
+            "useCount": {
+              "ability": "self",
+              "scope": "battle",
+              "kind": "activated",
+              "parity": "odd"
+            }
+          },
+          "then": [
+            {
+              "type": "addDebuff",
+              "target": "allEnemies",
+              "buff": "与ダメージDOWN",
+              "slot": "dmgDealtDown",
+              "amount": 30,
+              "duration": {
+                "turns": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "amon_a2",
+      "name": "破滅雷撃+",
+      "color": "red",
+      "ct": 5,
+      "effects": [
+        {
+          "type": "switch",
+          "cases": [
+            {
+              "cond": {
+                "useCount": {
+                  "ability": "self",
+                  "scope": "battle",
+                  "kind": "activated",
+                  "gte": 100
+                }
+              },
+              "then": [
+                {
+                  "type": "damage",
+                  "target": "allEnemies",
+                  "category": "ability",
+                  "hits": 8,
+                  "note": "上限120万"
+                }
+              ]
+            },
+            {
+              "cond": {
+                "useCount": {
+                  "ability": "self",
+                  "scope": "battle",
+                  "kind": "activated",
+                  "gte": 90
+                }
+              },
+              "then": [
+                {
+                  "type": "damage",
+                  "target": "allEnemies",
+                  "category": "ability",
+                  "hits": 6,
+                  "note": "上限100万"
+                }
+              ]
+            },
+            {
+              "cond": {
+                "useCount": {
+                  "ability": "self",
+                  "scope": "battle",
+                  "kind": "activated",
+                  "gte": 70
+                }
+              },
+              "then": [
+                {
+                  "type": "damage",
+                  "target": "allEnemies",
+                  "category": "ability",
+                  "hits": 5,
+                  "note": "上限 70〜79回:90万 / 80〜89回:100万"
+                }
+              ]
+            },
+            {
+              "cond": {
+                "useCount": {
+                  "ability": "self",
+                  "scope": "battle",
+                  "kind": "activated",
+                  "gte": 50
+                }
+              },
+              "then": [
+                {
+                  "type": "damage",
+                  "target": "allEnemies",
+                  "category": "ability",
+                  "hits": 4,
+                  "note": "上限 50〜59回:80万 / 60〜69回:90万"
+                }
+              ]
+            },
+            {
+              "cond": {
+                "useCount": {
+                  "ability": "self",
+                  "scope": "battle",
+                  "kind": "activated",
+                  "gte": 30
+                }
+              },
+              "then": [
+                {
+                  "type": "damage",
+                  "target": "allEnemies",
+                  "category": "ability",
+                  "hits": 3,
+                  "note": "上限 30〜39回:70万 / 40〜49回:80万"
+                }
+              ]
+            },
+            {
+              "cond": {
+                "useCount": {
+                  "ability": "self",
+                  "scope": "battle",
+                  "kind": "activated",
+                  "gte": 10
+                }
+              },
+              "then": [
+                {
+                  "type": "damage",
+                  "target": "allEnemies",
+                  "category": "ability",
+                  "hits": 2,
+                  "note": "上限 10〜19回:60万 / 20〜29回:70万"
+                }
+              ]
+            }
+          ],
+          "default": [
+            {
+              "type": "damage",
+              "target": "allEnemies",
+              "category": "ability",
+              "hits": 1,
+              "note": "7.5倍。上限60万"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "amon_a3",
+      "name": "冥界轟雷",
+      "color": "blue",
+      "ct": 2,
+      "effects": [
+        {
+          "type": "addDebuff",
+          "target": "allEnemies",
+          "buff": "防御DOWN",
+          "slot": "amon_defDown",
+          "amount": null,
+          "stack": {
+            "max": "unknown",
+            "duration": "unknown"
+          },
+          "duration": {
+            "turns": 8
+          },
+          "note": "必中/専用/累積可。合計最大40%"
+        },
+        {
+          "type": "if",
+          "cond": {
+            "useCount": {
+              "ability": "self",
+              "scope": "battle",
+              "kind": "activated",
+              "parity": "odd"
+            }
+          },
+          "then": [
+            {
+              "type": "addStatus",
+              "target": "allAllies",
+              "status": "オーバーヒール",
+              "duration": {
+                "turns": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "amon_a4",
+      "name": "[HELIX]アモン",
+      "color": "yellow",
+      "ct": 10,
+      "usable": {
+        "token": {
+          "name": "連理魔力",
+          "gte": 30
+        }
+      },
+      "limit": {
+        "perBattle": 1
+      },
+      "effects": [
+        {
+          "type": "addBuff",
+          "target": {
+            "alliesWhere": {
+              "element": "thunder"
+            }
+          },
+          "buff": "特殊攻撃UP",
+          "slot": "specialAtkUp",
+          "amount": null,
+          "duration": {
+            "turns": 1
+          }
+        },
+        {
+          "type": "heal",
+          "target": {
+            "alliesWhere": {
+              "element": "thunder"
+            }
+          },
+          "note": "HP全回復"
+        },
+        {
+          "type": "removeDebuff",
+          "target": {
+            "alliesWhere": {
+              "element": "thunder"
+            }
+          },
+          "count": "all"
+        },
+        {
+          "type": "repeat",
+          "times": 5,
+          "effects": [
+            {
+              "type": "activateAbility",
+              "character": "self",
+              "ability": "amon_a2"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "assists": [
+    {
+      "id": "amon_assist1_buff",
+      "name": "ヴォルトパニッシュメント",
+      "origin": {
+        "kind": "assist",
+        "index": 1
+      },
+      "trigger": {
+        "event": "tokenAdded",
+        "filter": {
+          "token": "連理魔力",
+          "source": "self"
+        }
+      },
+      "effects": [
+        {
+          "type": "if",
+          "cond": {
+            "token": {
+              "name": "連理魔力",
+              "eq": 1
+            }
+          },
+          "then": [
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "状態異常付与率UP",
+              "slot": "ailmentRateUp",
+              "amount": 15,
+              "duration": {
+                "permanent": true
+              }
+            },
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "状態異常耐性UP",
+              "slot": "ailmentResUp",
+              "amount": 15,
+              "duration": {
+                "permanent": true
+              }
+            },
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "アビリティ性能UP（ダメージ）",
+              "slot": "abilityPerfUp",
+              "amount": 10,
+              "duration": {
+                "permanent": true
+              }
+            },
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "アビリティ性能UP（上限）",
+              "slot": "abilityPerfCapUp",
+              "amount": 20,
+              "duration": {
+                "permanent": true
+              }
+            }
+          ]
+        },
+        {
+          "type": "if",
+          "cond": {
+            "token": {
+              "name": "連理魔力",
+              "eq": 11
+            }
+          },
+          "then": [
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "状態異常付与率UP",
+              "slot": "ailmentRateUp",
+              "amount": 30,
+              "duration": {
+                "permanent": true
+              }
+            },
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "状態異常耐性UP",
+              "slot": "ailmentResUp",
+              "amount": 30,
+              "duration": {
+                "permanent": true
+              }
+            },
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "アビリティ性能UP（ダメージ）",
+              "slot": "abilityPerfUp",
+              "amount": 15,
+              "duration": {
+                "permanent": true
+              }
+            },
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "アビリティ性能UP（上限）",
+              "slot": "abilityPerfCapUp",
+              "amount": 25,
+              "duration": {
+                "permanent": true
+              }
+            }
+          ]
+        },
+        {
+          "type": "if",
+          "cond": {
+            "token": {
+              "name": "連理魔力",
+              "eq": 21
+            }
+          },
+          "then": [
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "状態異常付与率UP",
+              "slot": "ailmentRateUp",
+              "amount": 50,
+              "duration": {
+                "permanent": true
+              }
+            },
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "状態異常耐性UP",
+              "slot": "ailmentResUp",
+              "amount": 50,
+              "duration": {
+                "permanent": true
+              }
+            },
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "アビリティ性能UP（ダメージ）",
+              "slot": "abilityPerfUp",
+              "amount": 20,
+              "duration": {
+                "permanent": true
+              }
+            },
+            {
+              "type": "addBuff",
+              "target": {
+                "alliesWhere": {
+                  "element": "thunder"
+                }
+              },
+              "buff": "アビリティ性能UP（上限）",
+              "slot": "abilityPerfCapUp",
+              "amount": 30,
+              "duration": {
+                "permanent": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "amon_assist1_turnEnd",
+      "name": "ヴォルトパニッシュメント",
+      "origin": {
+        "kind": "assist",
+        "index": 1
+      },
+      "trigger": {
+        "event": "turnEnd"
+      },
+      "effects": [
+        {
+          "type": "switch",
+          "cases": [
+            {
+              "cond": {
+                "count": {
+                  "event": "abilityUsed",
+                  "filter": {
+                    "color": "red",
+                    "sourceElement": "thunder"
+                  },
+                  "scope": "turn",
+                  "gte": 40
+                }
+              },
+              "then": [
+                {
+                  "type": "repeat",
+                  "times": 5,
+                  "effects": [
+                    {
+                      "type": "activateAbility",
+                      "character": "self",
+                      "ability": "amon_a2"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cond": {
+                "count": {
+                  "event": "abilityUsed",
+                  "filter": {
+                    "color": "red",
+                    "sourceElement": "thunder"
+                  },
+                  "scope": "turn",
+                  "gte": 30
+                }
+              },
+              "then": [
+                {
+                  "type": "repeat",
+                  "times": 4,
+                  "effects": [
+                    {
+                      "type": "activateAbility",
+                      "character": "self",
+                      "ability": "amon_a2"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cond": {
+                "count": {
+                  "event": "abilityUsed",
+                  "filter": {
+                    "color": "red",
+                    "sourceElement": "thunder"
+                  },
+                  "scope": "turn",
+                  "gte": 20
+                }
+              },
+              "then": [
+                {
+                  "type": "repeat",
+                  "times": 3,
+                  "effects": [
+                    {
+                      "type": "activateAbility",
+                      "character": "self",
+                      "ability": "amon_a2"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cond": {
+                "count": {
+                  "event": "abilityUsed",
+                  "filter": {
+                    "color": "red",
+                    "sourceElement": "thunder"
+                  },
+                  "scope": "turn",
+                  "gte": 10
+                }
+              },
+              "then": [
+                {
+                  "type": "repeat",
+                  "times": 2,
+                  "effects": [
+                    {
+                      "type": "activateAbility",
+                      "character": "self",
+                      "ability": "amon_a2"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cond": {
+                "count": {
+                  "event": "abilityUsed",
+                  "filter": {
+                    "color": "red",
+                    "sourceElement": "thunder"
+                  },
+                  "scope": "turn",
+                  "gte": 1
+                }
+              },
+              "then": [
+                {
+                  "type": "repeat",
+                  "times": 1,
+                  "effects": [
+                    {
+                      "type": "activateAbility",
+                      "character": "self",
+                      "ability": "amon_a2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "amon_assist2",
+      "name": "ヘル・アルカナ",
+      "trigger": {
+        "event": "abilityUsed",
+        "filter": {
+          "sourceElement": "thunder"
+        }
+      },
+      "cond": {
+        "count": {
+          "event": "abilityUsed",
+          "filter": {
+            "sourceElement": "thunder"
+          },
+          "scope": "turn",
+          "multipleOf": 8
+        }
+      },
+      "limit": {
+        "perTurn": 10
+      },
+      "effects": [
+        {
+          "type": "addToken",
+          "target": "self",
+          "name": "連理魔力",
+          "amount": 1
+        },
+        {
+          "type": "heal",
+          "target": "allAllies"
+        },
+        {
+          "type": "if",
+          "cond": {
+            "count": {
+              "event": "assistTriggered",
+              "filter": {
+                "assist": "amon_assist2"
+              },
+              "scope": "battle",
+              "multipleOf": 5
+            }
+          },
+          "then": [
+            {
+              "type": "removeDebuff",
+              "target": "allAllies",
+              "count": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "amon_assist3_reach30",
+      "name": "デモンズネクサス",
+      "origin": {
+        "kind": "assist",
+        "index": 3
+      },
+      "trigger": {
+        "event": "tokenAdded",
+        "filter": {
+          "token": "連理魔力",
+          "source": "self"
+        }
+      },
+      "cond": {
+        "count": {
+          "event": "tokenAdded",
+          "filter": {
+            "token": "連理魔力",
+            "source": "self"
+          },
+          "scope": "battle",
+          "sum": "amount",
+          "eq": 30
+        }
+      },
+      "effects": [
+        {
+          "type": "addBuff",
+          "target": {
+            "alliesWhere": {
+              "element": "thunder",
+              "includeSub": true
+            }
+          },
+          "buff": "アビリティダメージプラス",
+          "slot": "abilityDmgPlus",
+          "amount": null,
+          "duration": {
+            "permanent": true
+          }
+        },
+        {
+          "type": "addBuff",
+          "target": {
+            "alliesWhere": {
+              "element": "thunder",
+              "includeSub": true
+            }
+          },
+          "buff": "防御2倍",
+          "slot": "defDouble",
+          "amount": null,
+          "duration": {
+            "permanent": true
+          },
+          "undispellable": true
+        }
+      ]
+    },
+    {
+      "id": "amon_assist3_after30",
+      "name": "デモンズネクサス",
+      "origin": {
+        "kind": "assist",
+        "index": 3
+      },
+      "trigger": {
+        "event": "abilityUsed",
+        "filter": {
+          "source": "self"
+        }
+      },
+      "cond": {
+        "count": {
+          "event": "tokenAdded",
+          "filter": {
+            "token": "連理魔力",
+            "source": "self"
+          },
+          "scope": "battle",
+          "sum": "amount",
+          "gte": 30
+        }
+      },
+      "effects": [
+        {
+          "type": "activateAbility",
+          "character": "self",
+          "ability": "amon_a2"
+        }
+      ]
+    },
+    {
+      "id": "amon_a2_passive",
+      "origin": {
+        "kind": "ability",
+        "id": "amon_a2"
+      },
+      "trigger": {
+        "event": "tokenAdded",
+        "filter": {
+          "token": "連理魔力",
+          "source": "self"
+        }
+      },
+      "effects": [
+        {
+          "type": "changeCT",
+          "target": "self",
+          "abilities": [
+            "amon_a2"
+          ],
+          "setTo": 0
+        }
+      ]
+    }
+  ],
+  "source": "クライアント提供のゲーム画面・攻略記事と確認（2026-11-11）。効果量 null は未調査"
+}

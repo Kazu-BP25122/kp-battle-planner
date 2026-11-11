@@ -15,6 +15,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # キャラ定義の参照（枠・トークン・アビなど）と入れ子の段数の検査（AGENTS.md §16.1 手順 2）
+      - run: npm run validate:data
       # キャラ定義の Zod 検証は astro check / build（Content Collections）と test の両方で走る
       - run: npm run check
       - run: npm test

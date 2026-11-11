@@ -128,7 +128,7 @@ export function SetupView({ catalog, chart, cursor, commit }: Props) {
               >
                 <option value="">（空き）</option>
                 {all
-                  .filter((c) => (slot === "hero" ? c.kind === "hero" : c.kind === "princess"))
+                  .filter((c) => (slot === "hero" ? c.kind === "hero" : c.kind === "kamihime"))
                   .map((c) => (
                     <option key={c.id} value={c.id} disabled={used.has(c.id) && chart.party[slot] !== c.id}>
                       {c.name}（{ELEMENT_LABEL[c.element]}）
@@ -138,7 +138,7 @@ export function SetupView({ catalog, chart, cursor, commit }: Props) {
             </label>
           ))}
         </div>
-        {all.length < 5 && <p className="small warn">登録済みのキャラは {all.length} 体。初期リリースの 5 体の人選は未確定（AGENTS.md §15.2）。</p>}
+        <p className="small muted">初期リリースの 5 体：英霊ベートーヴェン、イヴ・シャイターン・アモン・アルテミス（AGENTS.md §15.2）。前衛・後衛の配置は実プレイの記録に合わせる。</p>
       </section>
 
       <section>

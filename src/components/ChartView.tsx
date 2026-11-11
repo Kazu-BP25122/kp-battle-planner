@@ -31,6 +31,11 @@ const WARNING_LABEL: Record<Warning["code"], string> = {
   stepLimit: "処理上限",
   customMissing: "専用処理なし",
   dataError: "データ",
+  tokenOverflow: "トークン破棄",
+  stackMax: "累積上限",
+  stackDurationUnknown: "累積の持続不明",
+  durationUnknown: "持続不明",
+  burstUnset: "バースト未設定",
 };
 
 export function ChartView({ catalog, chart, model, cursor, jumpTo, commit, notify }: Props) {

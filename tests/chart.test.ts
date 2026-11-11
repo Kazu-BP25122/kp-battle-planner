@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { currentBranch, currentPath, deleteBranch, newChart, recordOp, splitTurns } from "../src/chart/tree";
+import { currentBranch, currentPath, deleteBranch, newChart, recordOp, resetPlay, splitTurns } from "../src/chart/tree";
 import { initHistory, pushHistory, redo, undo } from "../src/chart/history";
 import { chartToJson, parseChartJson } from "../src/chart/storage";
 import type { Op } from "../src/schema/chart";
@@ -81,5 +81,26 @@ describe("JSON 入出力（§4.10）", () => {
     expect(parseChartJson('{"version":1}').ok).toBe(false);
     const bad = { ...chart, nodes: [{ id: "x", parent: "x", op: { type: "nextTurn" } }], branches: [{ ...chart.branches[0]!, tip: "x" }] };
     expect(parseChartJson(JSON.stringify(bad)).ok).toBe(false);
+  });
+});
+
+describe("プレイのリセット", () => {
+  it("操作の記録（全ブランチ）を消し、編成・クエスト・補正・設定は残す。Undo で元に戻せる", () => {
+    let { chart, cursor } = build([op("a"), op("b")]);
+    ({ chart, cursor } = recordOp(chart, chart.nodes[0]!.id, op("c"))); // 分岐
+    chart = { ...chart, quest: { enemyElement: "fire" }, corrections: { eve: { doubleRate: 30 } }, settings: { ...chart.settings, assistReentry: false } };
+    expect(chart.branches).toHaveLength(2);
+    const h0 = initHistory({ chart, cursor });
+    const reset = resetPlay(chart);
+    expect(reset.nodes).toEqual([]);
+    expect(reset.branches).toHaveLength(1);
+    expect(currentBranch(reset).tip).toBeNull();
+    expect(reset.party).toBe(chart.party);
+    expect(reset.quest).toEqual({ enemyElement: "fire" });
+    expect(reset.corrections).toEqual({ eve: { doubleRate: 30 } });
+    expect(reset.settings.assistReentry).toBe(false);
+    expect(parseChartJson(chartToJson(reset)).ok).toBe(true);
+    const h1 = pushHistory(h0, { chart: reset, cursor: null }, "プレイのリセット");
+    expect(undo(h1)!.history.present.chart).toBe(chart);
   });
 });
