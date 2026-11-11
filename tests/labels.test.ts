@@ -6,7 +6,8 @@ import { Battle } from "../src/engine";
 import { assistDisplayName } from "../src/schema/character";
 import { eventLogLines, eventNotice } from "../src/components/labels";
 import type { Catalog } from "../src/chart/input";
-import { amon, artemis, attack, beethoven, buffSlots, eve, makeInput, nextTurn, shaitan, use } from "./helpers";
+import { amon, artemis, attack, beethoven, buffSlots, eve, makeInput, nextTurn, plain, shaitan, use } from "./helpers";
+import type { Effect } from "../src/schema/dsl";
 
 const chars = [beethoven, eve, shaitan, amon, artemis];
 const catalog: Catalog = { characters: Object.fromEntries(chars.map((c) => [c.id, c])), buffSlots };
@@ -62,5 +63,16 @@ describe("表示名", () => {
     const from = b.state.log.length;
     b.apply(attack({ eve: 3 }));
     expect(eventLogLines(catalog, b.state.log.slice(from)).map((l) => l.text)).toEqual(["神代の始祖イヴ 通常攻撃 3段", "神代の始祖イヴ バーストゲージ 30 上昇"]);
+  });
+
+  it("同じ枠で付与できなかったとき、バフは CANCEL、デバフは MISS と表示する（§7.1）", () => {
+    const eff = (type: "addBuff" | "addDebuff", amount: number): Effect => ({ type, target: type === "addBuff" ? "self" : "enemy", buff: `x${amount}`, slot: type === "addBuff" ? "atkUp" : "dmgDealtDown", amount, duration: { turns: 3 } });
+    const c = plain("c", { abilities: [{ id: "c_a1", name: "a", color: "red", ct: 0, effects: [eff("addBuff", 30), eff("addBuff", 10), eff("addDebuff", 30), eff("addDebuff", 10)] }] });
+    const cat: Catalog = { characters: { c }, buffSlots };
+    const b = new Battle(makeInput({ front1: c }));
+    b.apply(use("c", "c_a1"));
+    const missed = b.state.log.filter((e) => e.type === "buffMissed");
+    expect(missed.map((e) => eventNotice(cat, e))).toEqual(["CANCEL：cの「x10」", "MISS：敵の「x10」"]);
+    expect(b.state.warnings.filter((w) => w.code === "buffMissed").map((w) => w.message.includes("CANCEL") ? "CANCEL" : "MISS")).toEqual(["CANCEL", "MISS"]);
   });
 });

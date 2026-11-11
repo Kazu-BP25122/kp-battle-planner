@@ -9,4 +9,5 @@ export type { Affinity } from "./affinity";
 export { abilityUnusableReasons } from "./ability";
 export { planReplenish } from "./formation";
 export { gaugeRate } from "./gauge";
+export { missLabel } from "./buffs";
 export { mulberry32 } from "./rng";

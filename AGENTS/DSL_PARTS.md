@@ -216,7 +216,7 @@
 |---|---|---|
 | `target` | ○ | 対象 |
 | `buff` | ○ | 名前（画面の表記どおり） |
-| `slot` | ○ | 枠 ID（`buffSlots.json` の ID）。同じ枠のものは重複ルール（上書き・MISS）で判定 |
+| `slot` | ○ | 枠 ID（`buffSlots.json` の ID）。同じ枠のものは重複ルール（上書き・CANCEL／MISS）で判定 |
 | `amount` | ○ | 効果量（実数値）。不明なら `null` |
 | `duration` | ○ | 持続 |
 | `stack` | | 累積型にする |
@@ -492,7 +492,7 @@
 | `max` | 数 / `null` / `"unknown"` | 累積の上限。`null` は上限なし |
 | `duration` | `perStack` / `refresh` / `unknown` | `perStack`：1 段ずつ別々に切れる。`refresh`：重ねるたびに全体の持続を更新。`unknown`：不明（`perStack` として扱う） |
 
-同じ `buff` 名のものを付けると、上書き・MISS の判定をせずに累積数が 1 増える。
+同じ `buff` 名のものを付けると、上書き・CANCEL／MISS の判定をせずに累積数が 1 増える。
 
 ---
 

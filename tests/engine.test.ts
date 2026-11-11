@@ -283,7 +283,7 @@ describe("バフ・デバフ（§7）", () => {
   });
   const a = plain("a", { abilities: [buffer("b30", 30, 3), buffer("b20", 20, 3), buffer("b30s", 30, 1), buffer("bnull", null, 2), buffer("gr", 50, 2, "test_gaugeRateUp")] });
 
-  it("小さい効果は MISS で既存の持続も更新しない", () => {
+  it("小さい効果は付与されず（バフは CANCEL）既存の持続も更新しない", () => {
     const b = new Battle(makeInput({ front1: a }));
     b.apply(use("a", "b30"));
     b.apply(use("a", "b20"));

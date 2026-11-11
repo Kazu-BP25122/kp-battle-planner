@@ -6,6 +6,7 @@ import type { BattleEvent } from "../engine";
 import type { Phase } from "../schema/common";
 import type { ChartModel } from "./model";
 import { charName } from "./labels";
+import { missLabel } from "../engine";
 
 interface Props {
   catalog: Catalog;
@@ -184,7 +185,7 @@ export function GanttView({ catalog, chart, model, jumpTo }: Props) {
   return (
     <div className="gantt">
       <p className="small muted">
-        通常表示（連撃は最低保証）の結果。1 ターンを「行動・攻撃・敵」の 3 区間で表示。× は MISS、棒をクリックすると付与した操作に戻る。
+        通常表示（連撃は最低保証）の結果。1 ターンを「行動・攻撃・敵」の 3 区間で表示。× はバフの CANCEL・デバフの MISS、棒をクリックすると付与した操作に戻る。
       </p>
       <div className="gantt-row header">
         <div className="gantt-label" />
@@ -258,7 +259,7 @@ export function GanttView({ catalog, chart, model, jumpTo }: Props) {
                         className="gantt-miss"
                         style={{ gridColumn: `${m.col + 1}`, gridRow: 1 }}
                         onClick={() => jump(m.ev.opIndex)}
-                        title={`MISS：${m.ev.buff}${m.ev.label ? `（${m.ev.label}）` : ""}`}
+                        title={`${missLabel(m.ev.polarity ?? "buff")}：${m.ev.buff}${m.ev.label ? `（${m.ev.label}）` : ""}`}
                       >
                         ×
                       </button>

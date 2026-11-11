@@ -21,6 +21,14 @@ export interface BuffSpec {
   blockSources?: GaugeBlockSource[];
 }
 
+/**
+ * 同じ枠で付与できなかったときのゲーム内の表示（§7.1）。バフは CANCEL、デバフは MISS。
+ * イベントはどちらも buffMissed（polarity で区別する）。
+ */
+export function missLabel(polarity: Polarity): "CANCEL" | "MISS" {
+  return polarity === "buff" ? "CANCEL" : "MISS";
+}
+
 export function buffList(ctx: Ctx, id: string): BuffInstance[] | null {
   if (id === "enemy") return ctx.state.enemy.buffs;
   return ctx.state.chars[id]?.buffs ?? null;
@@ -171,14 +179,14 @@ export function applyBuff(ctx: Ctx, exec: Exec, targetId: string, spec: BuffSpec
   const oldTotal = totalAmount(sameSlot);
   if (oldTotal === null || spec.amount === null) {
     // §7.2 効果量が不明なものは推測で判定しない。表示上は上書きとして扱い、警告を出す
-    warn(ctx, "amountUnknown", `${who}の「${spec.name}」：効果量が不明のため MISS・上書きを判定できない`, charId);
+    warn(ctx, "amountUnknown", `${who}の「${spec.name}」：効果量が不明のため CANCEL・MISS・上書きを判定できない`, charId);
     replace();
     return;
   }
 
   if (spec.amount < oldTotal) {
-    // §7.1 小さい効果は MISS。既存の効果の持続も更新しない
-    warn(ctx, "buffMissed", `${who}の「${spec.name}」が MISS（既存「${sameSlot[0]!.name}」${oldTotal} > ${spec.amount}）`, charId);
+    // §7.1 小さい効果は付与されない（バフは CANCEL、デバフは MISS）。既存の効果の持続も更新しない
+    warn(ctx, "buffMissed", `${who}の「${spec.name}」が ${missLabel(spec.polarity)}（既存「${sameSlot[0]!.name}」${oldTotal} > ${spec.amount}）`, charId);
     emit(ctx, { ...evBase(), type: "buffMissed" });
     return;
   }

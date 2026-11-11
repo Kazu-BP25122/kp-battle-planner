@@ -20,7 +20,7 @@ interface Props {
 }
 
 const WARNING_LABEL: Record<Warning["code"], string> = {
-  buffMissed: "MISS",
+  buffMissed: "CANCEL・MISS",
   buffShortened: "持続の上書き",
   debuffFloor: "デバフ下限",
   amountUnknown: "効果量不明",

@@ -1,7 +1,7 @@
 import type { Catalog } from "../chart/input";
 import type { ManualEvent, Op } from "../schema/chart";
 import type { BattleEvent, FailureReason } from "../engine";
-import { UNUSABLE_LABEL } from "../engine";
+import { UNUSABLE_LABEL, missLabel } from "../engine";
 import type { Phase } from "../schema/common";
 import { abilityDisplayName, assistDisplayName } from "../schema/character";
 import { ELEMENT_LABEL } from "../schema/common";
@@ -84,7 +84,7 @@ export function eventNotice(catalog: Catalog, e: BattleEvent): string | null {
     case "gaugeChanged":
       return `${charName(catalog, e.target)} ゲージ ${e.amount! > 0 ? "+" : ""}${fmt(e.amount ?? 0)}（${MEANS_LABEL[e.means ?? ""] ?? e.means}）`;
     case "buffMissed":
-      return `MISS：${charName(catalog, e.target)}の「${e.buff}」`;
+      return `${missLabel(e.polarity ?? "buff")}：${charName(catalog, e.target)}の「${e.buff}」`;
     case "enterBattle":
       return `${charName(catalog, e.actor)} 登場（${e.via === "swap" ? "交代" : "補充"}）`;
     case "swappedOut":
@@ -168,7 +168,7 @@ export function eventLogLine(catalog: Catalog, e: BattleEvent): string | null {
       return `${tgt}に「${e.buff}」${e.type === "buffApplied" ? "付与" : "上書き"}${extra ? `（${extra}）` : ""}`;
     }
     case "buffMissed":
-      return `${tgt}の「${e.buff}」MISS`;
+      return `${tgt}の「${e.buff}」${missLabel(e.polarity ?? "buff")}`;
     case "buffConsumed":
       return `${tgt}の「${e.buff}」消費（残り ${e.remaining ?? 0} 回）`;
     case "buffExpired":
